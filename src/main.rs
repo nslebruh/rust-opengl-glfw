@@ -1,6 +1,8 @@
 extern crate glfw;
 extern crate gl;
 
+use std::time::Instant;
+
 use gl::types::*;
 use glfw::{Action, Context, Key};
 
@@ -75,7 +77,7 @@ fn main() {
 
     window.set_key_polling(true);
     window.make_current();
-
+    glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
     unsafe{
         gl::Viewport(0, 0, WIDTH.try_into().unwrap(), HEIGHT.try_into().unwrap())
     }
