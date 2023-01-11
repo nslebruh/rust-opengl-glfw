@@ -1,9 +1,8 @@
 extern crate glfw;
 extern crate gl;
 
-use std::time::Instant;
-
 use gl::types::*;
+use cgmath::Vector2;
 use glfw::{Action, Context, Key};
 
 trait Apply<Args> {
@@ -58,14 +57,41 @@ pub unsafe fn gl_clear_color(r: u8, g: u8, b: u8, a: u8) {
             g,
             b,
             a
-        | gl::ClearColor(r, g, b, a)
+        | {gl::ClearColor(r, g, b, a)}
     ).apply(rgba_from_u8(r, g, b, a).unwrap());
 }
 
 
+pub struct KeyState {
+    pub key: Key,
+    pub pressed: bool,
+    pub released: bool
+}
+
+impl KeyState {
+    pub fn new(key: Key) -> Self {
+        Self {
+            key,
+            pressed: false,
+            released: false,
+        }
+    }
+    pub fn toggle(&mut self) {
+        self.pressed = !self.pressed;
+        self.released = !self.released;
+        println!("{:?} {}", self.key, match self.pressed {
+            true => "pressed",
+            false => "released"
+        })
+    }
+}
+
 fn main() {
-    const WIDTH: u32 = 300;
-    const HEIGHT: u32 = 300;
+    let target_fps: f64 = 60.0;
+    let mut w = KeyState::new(Key::W);
+
+    let vertices: [Vector2<f32>; 3];
+
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
@@ -73,34 +99,48 @@ fn main() {
     let (mut window, events) = glfw.create_window(300, 300, "Hello this is window", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 
+    let (screen_width, screen_height) = window.get_framebuffer_size();
+     
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
-    window.set_key_polling(true);
     window.make_current();
-    glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-    unsafe{
-        gl::Viewport(0, 0, WIDTH.try_into().unwrap(), HEIGHT.try_into().unwrap())
-    }
+    window.set_key_polling(true);
 
+    unsafe{
+        gl::Viewport(0, 0, screen_width, screen_height)
+    }
+    let mut last_time = glfw.get_time();
     while !window.should_close() {
+        glfw.poll_events();
+        for (_, event) in glfw::flush_messages(&events) {
+            handle_window_event(&mut window, event, &mut w);
+        }
+
+        let (w, h) = window.get_framebuffer_size();
+        let _ratio: f32 = w as f32 / h as f32;
+
         unsafe {
+            gl::Viewport(0, 0, w, h);
             gl_clear_color(255, 119, 110, 255);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
 
-        window.swap_buffers();
-        glfw.poll_events();
-
-        for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event);
+        while glfw.get_time() < last_time + 1.0 / target_fps {
         }
+        last_time += 1.0 / target_fps;
+
+        window.swap_buffers();
+        
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, w: &mut KeyState) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
+        },
+        glfw::WindowEvent::Key(Key::W, _, action, _) if action != Action::Repeat => {
+            w.toggle();
         },
         _ => {}
     }
