@@ -1,7 +1,10 @@
+mod util;
+
 extern crate glfw;
 extern crate gl;
 
-use gl::types::*;
+use util::*;
+use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use cgmath::Vector2;
 use glfw::{Action, Context, Key};
 
@@ -94,6 +97,7 @@ fn main() {
     ];
 
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
 
@@ -103,6 +107,42 @@ fn main() {
     let (screen_width, screen_height) = window.get_framebuffer_size();
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
+
+    let mut vbo: GLuint = 0;
+
+    unsafe {
+        gl::GenBuffers(1,  &mut vbo);
+        gl::BindBuffer(ARRAY_BUFFER, vbo);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+            vertices.as_ptr() as *const gl::types::GLvoid,
+            gl::STATIC_DRAW,
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+    }
+
+    let mut vao: GLuint = 0;
+
+    unsafe {
+        gl::GenVertexArrays(1, &mut vao);
+        gl::BindVertexArray(vao);
+        gl::BindBuffer(ARRAY_BUFFER, vbo);
+
+        gl::EnableVertexAttribArray(0);
+        gl::VertexAttribPointer(
+            0,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
+            std::ptr::null()
+        );
+
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        gl::BindVertexArray(0);
+    }
+    
 
     window.make_current();
     window.set_key_polling(true);
@@ -131,6 +171,8 @@ fn main() {
             gl::Viewport(0, 0, w, h);
             gl_clear_color(255, 119, 110, 255);
             gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::BindVertexArray(vao);
+            gl::DrawArrays(TRIANGLES, 0, 3)
         }
 
         while glfw.get_time() < last_time + 1.0 / target_fps {
