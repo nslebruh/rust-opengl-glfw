@@ -62,13 +62,13 @@ pub unsafe fn gl_clear_color(r: u8, g: u8, b: u8, a: u8) {
 }
 
 
-pub struct KeyState {
+pub struct DigitalInputState {
     pub key: Key,
     pub pressed: bool,
     pub released: bool
 }
 
-impl KeyState {
+impl DigitalInputState {
     pub fn new(key: Key) -> Self {
         Self {
             key,
@@ -87,10 +87,11 @@ impl KeyState {
 }
 
 fn main() {
-    let target_fps: f64 = 60.0;
-    let mut w = KeyState::new(Key::W);
-
-    let vertices: [Vector2<f32>; 3];
+    let vertices: [Vector2<f32>; 3] = [
+        Vector2::new(-0.5, 0.0),
+        Vector2::new(0.5, 0.0),
+        Vector2::new(0.0, 0.5)
+    ];
 
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
@@ -100,16 +101,23 @@ fn main() {
         .expect("Failed to create GLFW window.");
 
     let (screen_width, screen_height) = window.get_framebuffer_size();
-     
+
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
     window.make_current();
     window.set_key_polling(true);
+    window.set_cursor_pos_polling(true);
+    window.set_mouse_button_polling(true);
+    window.set_scroll_polling(true);
 
     unsafe{
         gl::Viewport(0, 0, screen_width, screen_height)
     }
+
+    let target_fps: f64 = 60.0;
+    let mut w = DigitalInputState::new(Key::W);
     let mut last_time = glfw.get_time();
+
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
@@ -130,11 +138,11 @@ fn main() {
         last_time += 1.0 / target_fps;
 
         window.swap_buffers();
-        
+
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, w: &mut KeyState) {
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, w: &mut DigitalInputState) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
@@ -142,6 +150,16 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, w: &
         glfw::WindowEvent::Key(Key::W, _, action, _) if action != Action::Repeat => {
             w.toggle();
         },
+        glfw::WindowEvent::CursorPos(x, y) => {
+            println!("x: {}, y: {}", x, y)
+        },
+        glfw::WindowEvent::MouseButton(mouse_button, action, _) => {
+            println!("mouse_button: {:?}, action: {:?}", mouse_button, action)
+        },
+        glfw::WindowEvent::Scroll(x, y) => {
+            println!("x: {}, y: {}", x, y)
+        }
+
         _ => {}
     }
 }
