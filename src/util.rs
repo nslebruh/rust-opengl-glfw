@@ -2,8 +2,98 @@
 
 extern crate gl;
 use std::ffi::{CString, CStr};
+use glfw::Key;
 
 use gl::{types::*, VERTEX_SHADER, FRAGMENT_SHADER};
+
+pub struct DigitalInputState {
+    pub key: Key,
+    pub pressed: bool,
+    pub released: bool
+}
+
+impl DigitalInputState {
+    pub fn new(key: Key) -> Self {
+        Self {
+            key,
+            pressed: false,
+            released: false,
+        }
+    }
+    pub fn toggle(&mut self) {
+        self.pressed = !self.pressed;
+        self.released = !self.released;
+        println!("{:?} {}", self.key, match self.pressed {
+            true => "pressed",
+            false => "released"
+        })
+    }
+}
+
+
+#[derive(Debug, Hash)]
+pub struct Keybind {
+    key: Key,
+    function: fn()
+}
+
+
+
+trait Apply<Args> {
+    type Output;
+    fn apply(&self, args: Args) -> Self::Output;
+}
+
+macro_rules! impl_apply {
+    // Empty case
+    () => {};
+    ($first_generic:ident $($other_generics:ident)*) => {
+        impl_apply!($($other_generics)*);
+
+        impl<$first_generic, $($other_generics,)* Ret, Func>
+            Apply<($first_generic, $($other_generics,)*)>
+            for Func
+        where
+            Func: Fn($first_generic, $($other_generics,)*) -> Ret,
+        {
+            type Output = Ret;
+            #[allow(non_snake_case)]
+            fn apply(
+                &self,
+                ($first_generic, $($other_generics,)*): ($first_generic, $($other_generics,)*),
+            ) -> Self::Output {
+                self($first_generic, $($other_generics,)*)
+            }
+        }
+    };
+}
+impl<Ret, Func> Apply<()> for Func
+where
+    Func: Fn() -> Ret,
+{
+    type Output = Ret;
+    fn apply(&self, (): ()) -> Self::Output {
+        self()
+    }
+}
+
+impl_apply!(A B C D E F G H I J K L M);
+
+
+pub fn rgba_from_u8(r: u8, g: u8, b: u8, a: u8) -> Result<(f32, f32, f32, f32), ()> {
+    Ok((f32::from(r) / 255.0, f32::from(g) / 255.0, f32::from(b) / 255.0, f32::from(a) / 255.0))
+}
+
+pub unsafe fn gl_clear_color(r: u8, g: u8, b: u8, a: u8) {
+    (
+        |
+            r,
+            g,
+            b,
+            a
+        | {gl::ClearColor(r, g, b, a)}
+    ).apply(rgba_from_u8(r, g, b, a).unwrap());
+}
 
 
 pub fn vert_shader_from_source(source: &CStr) -> Result<GLuint, String> {

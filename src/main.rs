@@ -3,99 +3,15 @@ mod util;
 extern crate glfw;
 extern crate gl;
 
+use std::ffi::CString;
+
 use util::*;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
-use cgmath::Vector2;
 use glfw::{Action, Context, Key};
 
-trait Apply<Args> {
-    type Output;
-    fn apply(&self, args: Args) -> Self::Output;
-}
 
-macro_rules! impl_apply {
-    // Empty case
-    () => {};
-    ($first_generic:ident $($other_generics:ident)*) => {
-        impl_apply!($($other_generics)*);
-
-        impl<$first_generic, $($other_generics,)* Ret, Func>
-            Apply<($first_generic, $($other_generics,)*)>
-            for Func
-        where
-            Func: Fn($first_generic, $($other_generics,)*) -> Ret,
-        {
-            type Output = Ret;
-            #[allow(non_snake_case)]
-            fn apply(
-                &self,
-                ($first_generic, $($other_generics,)*): ($first_generic, $($other_generics,)*),
-            ) -> Self::Output {
-                self($first_generic, $($other_generics,)*)
-            }
-        }
-    };
-}
-impl<Ret, Func> Apply<()> for Func
-where
-    Func: Fn() -> Ret,
-{
-    type Output = Ret;
-    fn apply(&self, (): ()) -> Self::Output {
-        self()
-    }
-}
-
-impl_apply!(A B C D E F G H I J K L M);
-
-
-pub fn rgba_from_u8(r: u8, g: u8, b: u8, a: u8) -> Result<(f32, f32, f32, f32), ()> {
-    Ok((f32::from(r) / 255.0, f32::from(g) / 255.0, f32::from(b) / 255.0, f32::from(a) / 255.0))
-}
-
-pub unsafe fn gl_clear_color(r: u8, g: u8, b: u8, a: u8) {
-    (
-        |
-            r,
-            g,
-            b,
-            a
-        | {gl::ClearColor(r, g, b, a)}
-    ).apply(rgba_from_u8(r, g, b, a).unwrap());
-}
-
-
-pub struct DigitalInputState {
-    pub key: Key,
-    pub pressed: bool,
-    pub released: bool
-}
-
-impl DigitalInputState {
-    pub fn new(key: Key) -> Self {
-        Self {
-            key,
-            pressed: false,
-            released: false,
-        }
-    }
-    pub fn toggle(&mut self) {
-        self.pressed = !self.pressed;
-        self.released = !self.released;
-        println!("{:?} {}", self.key, match self.pressed {
-            true => "pressed",
-            false => "released"
-        })
-    }
-}
 
 fn main() {
-    let vertices: [Vector2<f32>; 3] = [
-        Vector2::new(-0.5, 0.0),
-        Vector2::new(0.5, 0.0),
-        Vector2::new(0.0, 0.5)
-    ];
-
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
@@ -108,10 +24,18 @@ fn main() {
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
-    let mut vbo: GLuint = 0;
+    let vertices: Vec<f32> = vec![
+        -0.5, 0.0, 0.0,
+        0.5, 0.0, 0.0,
+        0.0, 0.5, 0.0
+    ];
 
+    let mut vbo: GLuint = 0;
     unsafe {
         gl::GenBuffers(1,  &mut vbo);
+    }
+
+    unsafe {
         gl::BindBuffer(ARRAY_BUFFER, vbo);
         gl::BufferData(
             gl::ARRAY_BUFFER,
@@ -123,9 +47,11 @@ fn main() {
     }
 
     let mut vao: GLuint = 0;
-
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
+    }
+
+    unsafe {
         gl::BindVertexArray(vao);
         gl::BindBuffer(ARRAY_BUFFER, vbo);
 
@@ -143,6 +69,23 @@ fn main() {
         gl::BindVertexArray(0);
     }
     
+    let vert = include_str!("../triangle.vert");
+    let frag = include_str!("../triangle.frag");
+
+    let vert_shader = vert_shader_from_source(&CString::new(vert).unwrap()).unwrap();
+    let frag_shader = frag_shader_from_source(&CString::new(frag).unwrap()).unwrap();
+
+    let program: GLuint = unsafe { gl::CreateProgram() };
+
+    unsafe {
+        gl::AttachShader(program, vert_shader);
+        gl::AttachShader(program, frag_shader);
+
+        gl::LinkProgram(program);
+
+        gl::DetachShader(program, vert_shader);
+        gl::DetachShader(program, frag_shader);
+    }
 
     window.make_current();
     window.set_key_polling(true);
@@ -151,7 +94,8 @@ fn main() {
     window.set_scroll_polling(true);
 
     unsafe{
-        gl::Viewport(0, 0, screen_width, screen_height)
+        gl::Viewport(0, 0, screen_width, screen_height);
+        gl_clear_color(255, 119, 110, 255);
     }
 
     let target_fps: f64 = 60.0;
@@ -169,8 +113,10 @@ fn main() {
 
         unsafe {
             gl::Viewport(0, 0, w, h);
-            gl_clear_color(255, 119, 110, 255);
             gl::Clear(gl::COLOR_BUFFER_BIT);
+        }
+        unsafe { gl::UseProgram(program); }
+        unsafe {
             gl::BindVertexArray(vao);
             gl::DrawArrays(TRIANGLES, 0, 3)
         }
