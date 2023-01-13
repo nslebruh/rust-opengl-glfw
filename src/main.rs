@@ -3,7 +3,7 @@ mod util;
 extern crate glfw;
 extern crate gl;
 
-use std::{ffi::CString, mem::{size_of_val, size_of}};
+use std::{ffi::CString, mem::{size_of_val, size_of}, str::FromStr};
 use cgmath::{Vector2, Vector3, vec2, vec3};
 use util::*;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
@@ -23,10 +23,13 @@ fn main() {
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
-    let vertices: Vec<Vector2<f32>>  = vec![
-        vec2(-0.5, 0.0),
-        vec2(0.0, 0.5),
-        vec2(0.5, 0.0)
+    let vertices: Vec<Triangle>  = vec![
+        vec3(
+            vec2(-0.5, 0.0),
+            vec2(0.0, 0.5),
+            vec2(0.5, 0.0)
+        )
+        
     ];
 
     let mut vbo: GLuint = 0;
@@ -97,7 +100,8 @@ fn main() {
     }
 
     let target_fps: f64 = 60.0;
-    let mut w = DigitalInputState::new(Key::W);
+    let mut input_controller = InputController::init();
+    let mut w = DigitalInputState::new(BastardKey::W);
     let mut last_time = glfw.get_time();
 
     while !window.should_close() {
@@ -116,7 +120,7 @@ fn main() {
         unsafe { gl::UseProgram(program); }
         unsafe {
             gl::BindVertexArray(vao);
-            gl::DrawArrays(TRIANGLES, 0, vertices.len() as GLsizei)
+            gl::DrawArrays(TRIANGLES, 0, (vertices.len() * 3) as GLsizei)
         }
 
         while glfw.get_time() < last_time + 1.0 / target_fps {
@@ -133,8 +137,8 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, w: &
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
         },
-        glfw::WindowEvent::Key(Key::W, _, action, _) if action != Action::Repeat => {
-            w.toggle();
+        glfw::WindowEvent::Key(key, _, action, _) if action != Action::Repeat => {
+            let bk = BastardKey::from_str(key.get_name().unwrap().as_ref()).unwrap();
         },
         glfw::WindowEvent::CursorPos(x, y) => {
             println!("x: {}, y: {}", x, y)
