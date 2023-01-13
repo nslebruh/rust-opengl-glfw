@@ -6,6 +6,8 @@ use glfw::Key;
 
 use gl::{types::*, VERTEX_SHADER, FRAGMENT_SHADER};
 
+
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct DigitalInputState {
     pub key: Key,
     pub pressed: bool,
@@ -31,11 +33,23 @@ impl DigitalInputState {
 }
 
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct Keybind {
     key: Key,
-    function: fn()
+    function: InputFunction
 }
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+pub struct InputFunction {
+    name: String,
+    function: Option<fn()> 
+}
+
+pub struct InputController {
+    keybinds: Vec<Keybind>,
+    key_states: Vec<DigitalInputState>
+}
+
 
 
 

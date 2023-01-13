@@ -3,12 +3,11 @@ mod util;
 extern crate glfw;
 extern crate gl;
 
-use std::ffi::CString;
-
+use std::{ffi::CString, mem::{size_of_val, size_of}};
+use cgmath::{Vector2, Vector3, vec2, vec3};
 use util::*;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use glfw::{Action, Context, Key};
-
 
 
 fn main() {
@@ -24,23 +23,22 @@ fn main() {
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
-    let vertices: Vec<f32> = vec![
-        -0.5, 0.0, 0.0,
-        0.5, 0.0, 0.0,
-        0.0, 0.5, 0.0
+    let vertices: Vec<Vector2<f32>>  = vec![
+        vec2(-0.5, 0.0),
+        vec2(0.0, 0.5),
+        vec2(0.5, 0.0)
     ];
 
     let mut vbo: GLuint = 0;
     unsafe {
         gl::GenBuffers(1,  &mut vbo);
     }
-
     unsafe {
         gl::BindBuffer(ARRAY_BUFFER, vbo);
         gl::BufferData(
             gl::ARRAY_BUFFER,
-            (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-            vertices.as_ptr() as *const gl::types::GLvoid,
+            size_of_val(&vertices) as isize,
+            vertices.as_ptr().cast(),
             gl::STATIC_DRAW,
         );
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -58,10 +56,10 @@ fn main() {
         gl::EnableVertexAttribArray(0);
         gl::VertexAttribPointer(
             0,
-            3,
+            2,
             gl::FLOAT,
             gl::FALSE,
-            (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
+            size_of::<Vector2<f32>>().try_into().unwrap(),
             std::ptr::null()
         );
 
@@ -118,7 +116,7 @@ fn main() {
         unsafe { gl::UseProgram(program); }
         unsafe {
             gl::BindVertexArray(vao);
-            gl::DrawArrays(TRIANGLES, 0, 3)
+            gl::DrawArrays(TRIANGLES, 0, vertices.len() as GLsizei)
         }
 
         while glfw.get_time() < last_time + 1.0 / target_fps {
