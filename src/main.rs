@@ -1,4 +1,5 @@
 mod util;
+mod input_controller;
 
 extern crate glfw;
 extern crate gl;
@@ -6,6 +7,7 @@ extern crate gl;
 use std::{ffi::CString, mem::{size_of_val, size_of}};
 use cgmath::{Vector2, Vector3, vec2, vec3};
 use util::*;
+use input_controller::InputController;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use glfw::{Action, Context, Key};
 
@@ -94,6 +96,7 @@ fn main() {
     window.set_mouse_button_polling(true);
     window.set_scroll_polling(true);
 
+
     unsafe{
         gl::Viewport(0, 0, screen_width, screen_height);
         gl_clear_color(255, 119, 110, 255);
@@ -105,10 +108,6 @@ fn main() {
 
 
     while !window.should_close() {
-        glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event, &mut ic);
-        }
 
         let (w, h) = window.get_framebuffer_size();
         let _ratio: f32 = w as f32 / h as f32;
@@ -128,6 +127,11 @@ fn main() {
         last_time += 1.0 / target_fps;
 
         window.swap_buffers();
+
+        glfw.poll_events();
+        for (_, event) in glfw::flush_messages(&events) {
+            handle_window_event(&mut window, event, &mut ic);
+        }
 
     }
 }
