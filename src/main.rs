@@ -3,7 +3,7 @@ mod util;
 extern crate glfw;
 extern crate gl;
 
-use std::{ffi::CString, mem::{size_of_val, size_of}, str::FromStr};
+use std::{ffi::CString, mem::{size_of_val, size_of}};
 use cgmath::{Vector2, Vector3, vec2, vec3};
 use util::*;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
@@ -100,14 +100,14 @@ fn main() {
     }
 
     let target_fps: f64 = 60.0;
-    let mut input_controller = InputController::init();
-    let mut w = DigitalInputState::new(BastardKey::W);
     let mut last_time = glfw.get_time();
+    let mut ic = InputController::init();
+
 
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event, &mut w);
+            handle_window_event(&mut window, event, &mut ic);
         }
 
         let (w, h) = window.get_framebuffer_size();
@@ -132,13 +132,16 @@ fn main() {
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, w: &mut DigitalInputState) {
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, ic: &mut InputController) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
         },
         glfw::WindowEvent::Key(key, _, action, _) if action != Action::Repeat => {
-            let bk = BastardKey::from_str(key.get_name().unwrap().as_ref()).unwrap();
+            let _ = &ic.toggle_key_state(&key);
+            //let bk = BastardKey::from_str(key.get_name().unwrap().as_ref()).unwrap();
+            println!("key: {:?}, action: {:?}", key, action)
+            //input_controller.get_key_state(bk).toggle();
         },
         glfw::WindowEvent::CursorPos(x, y) => {
             println!("x: {}, y: {}", x, y)

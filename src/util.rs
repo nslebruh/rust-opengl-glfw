@@ -2,46 +2,44 @@
 
 
 extern crate gl;
-use std::str::FromStr;
-use strum_macros::{EnumIter, EnumString};
-use strum::IntoEnumIterator;
+use std::collections::HashMap;
 use std::ffi::{CString, CStr};
 use cgmath::{Vector3, Vector2};
 use glfw::Key;
-
 use gl::{types::*, VERTEX_SHADER, FRAGMENT_SHADER};
+
+
+
 
 pub type Triangle = Vector3<Vector2<f32>>;
 
-#[derive(Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub struct DigitalInputState {
-    pub key: BastardKey,
     pub pressed: bool,
     pub released: bool
 }
 
 impl DigitalInputState {
-    pub fn new(key: BastardKey) -> Self {
+    pub fn new() -> DigitalInputState {
         Self {
-            key,
             pressed: false,
-            released: false,
+            released: false
         }
     }
+
     pub fn toggle(&mut self) {
         self.pressed = !self.pressed;
         self.released = !self.released;
-        println!("{:?} {}", self.key, match self.pressed {
+        println!("{}", match self.pressed {
             true => "pressed",
             false => "released"
         })
     }
 }
 
-
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct Keybind {
-    key: BastardKey,
+    key: Key,
     function: InputFunction
 }
 
@@ -51,21 +49,146 @@ pub struct InputFunction {
     function: Option<fn()> 
 }
 
+#[derive(Debug, Clone)]
 pub struct InputController {
-    //keybinds: Vec<Keybind>,
-    key_states: Vec<DigitalInputState>
+    //keybinds: HashMap<Key, Keybind>,
+    key_states: HashMap<Key, DigitalInputState>
 }
 
 impl InputController {
     pub fn init() -> Self {
-        let key_states: Vec<DigitalInputState> = BastardKey::iter().map(|bk: BastardKey| DigitalInputState::new(bk)).collect();
+        let key_states: HashMap<Key, DigitalInputState> = HashMap::from([
+            (Key::Space, DigitalInputState::new()),
+            (Key::Apostrophe, DigitalInputState::new()),
+            (Key::Comma, DigitalInputState::new()),
+            (Key::Minus, DigitalInputState::new()),
+            (Key::Period, DigitalInputState::new()),
+            (Key::Slash, DigitalInputState::new()),
+            (Key::Num0, DigitalInputState::new()),
+            (Key::Num1, DigitalInputState::new()),
+            (Key::Num2, DigitalInputState::new()),
+            (Key::Num3, DigitalInputState::new()),
+            (Key::Num4, DigitalInputState::new()),
+            (Key::Num5, DigitalInputState::new()),
+            (Key::Num6, DigitalInputState::new()),
+            (Key::Num7, DigitalInputState::new()),
+            (Key::Num8, DigitalInputState::new()),
+            (Key::Num9, DigitalInputState::new()),
+            (Key::Semicolon, DigitalInputState::new()),
+            (Key::Equal, DigitalInputState::new()),
+            (Key::A, DigitalInputState::new()),
+            (Key::B, DigitalInputState::new()),
+            (Key::C, DigitalInputState::new()),
+            (Key::D, DigitalInputState::new()),
+            (Key::E, DigitalInputState::new()),
+            (Key::F, DigitalInputState::new()),
+            (Key::G, DigitalInputState::new()),
+            (Key::H, DigitalInputState::new()),
+            (Key::I, DigitalInputState::new()),
+            (Key::J, DigitalInputState::new()),
+            (Key::K, DigitalInputState::new()),
+            (Key::L, DigitalInputState::new()),
+            (Key::M, DigitalInputState::new()),
+            (Key::N, DigitalInputState::new()),
+            (Key::O, DigitalInputState::new()),
+            (Key::P, DigitalInputState::new()),
+            (Key::Q, DigitalInputState::new()),
+            (Key::R, DigitalInputState::new()),
+            (Key::S, DigitalInputState::new()),
+            (Key::T, DigitalInputState::new()),
+            (Key::U, DigitalInputState::new()),
+            (Key::V, DigitalInputState::new()),
+            (Key::W, DigitalInputState::new()),
+            (Key::X, DigitalInputState::new()),
+            (Key::Y, DigitalInputState::new()),
+            (Key::Z, DigitalInputState::new()),
+            (Key::LeftBracket, DigitalInputState::new()),
+            (Key::Backslash, DigitalInputState::new()),
+            (Key::RightBracket, DigitalInputState::new()),
+            (Key::GraveAccent, DigitalInputState::new()),
+            (Key::World1, DigitalInputState::new()),
+            (Key::World2, DigitalInputState::new()),
+            (Key::Escape, DigitalInputState::new()),
+            (Key::Enter, DigitalInputState::new()),
+            (Key::Tab, DigitalInputState::new()),
+            (Key::Backspace, DigitalInputState::new()),
+            (Key::Insert, DigitalInputState::new()),
+            (Key::Delete, DigitalInputState::new()),
+            (Key::Right, DigitalInputState::new()),
+            (Key::Left, DigitalInputState::new()),
+            (Key::Down, DigitalInputState::new()),
+            (Key::Up, DigitalInputState::new()),
+            (Key::PageUp, DigitalInputState::new()),
+            (Key::PageDown, DigitalInputState::new()),
+            (Key::Home, DigitalInputState::new()),
+            (Key::End, DigitalInputState::new()),
+            (Key::CapsLock, DigitalInputState::new()),
+            (Key::ScrollLock, DigitalInputState::new()),
+            (Key::NumLock, DigitalInputState::new()),
+            (Key::PrintScreen, DigitalInputState::new()),
+            (Key::Pause, DigitalInputState::new()),
+            (Key::F1, DigitalInputState::new()),
+            (Key::F2, DigitalInputState::new()),
+            (Key::F3, DigitalInputState::new()),
+            (Key::F4, DigitalInputState::new()),
+            (Key::F5, DigitalInputState::new()),
+            (Key::F6, DigitalInputState::new()),
+            (Key::F7, DigitalInputState::new()),
+            (Key::F8, DigitalInputState::new()),
+            (Key::F9, DigitalInputState::new()),
+            (Key::F10, DigitalInputState::new()),
+            (Key::F11, DigitalInputState::new()),
+            (Key::F12, DigitalInputState::new()),
+            (Key::F13, DigitalInputState::new()),
+            (Key::F14, DigitalInputState::new()),
+            (Key::F15, DigitalInputState::new()),
+            (Key::F16, DigitalInputState::new()),
+            (Key::F17, DigitalInputState::new()),
+            (Key::F18, DigitalInputState::new()),
+            (Key::F19, DigitalInputState::new()),
+            (Key::F20, DigitalInputState::new()),
+            (Key::F21, DigitalInputState::new()),
+            (Key::F22, DigitalInputState::new()),
+            (Key::F23, DigitalInputState::new()),
+            (Key::F24, DigitalInputState::new()),
+            (Key::F25, DigitalInputState::new()),
+            (Key::Kp0, DigitalInputState::new()),
+            (Key::Kp1, DigitalInputState::new()),
+            (Key::Kp2, DigitalInputState::new()),
+            (Key::Kp3, DigitalInputState::new()),
+            (Key::Kp4, DigitalInputState::new()),
+            (Key::Kp5, DigitalInputState::new()),
+            (Key::Kp6, DigitalInputState::new()),
+            (Key::Kp7, DigitalInputState::new()),
+            (Key::Kp8, DigitalInputState::new()),
+            (Key::Kp9, DigitalInputState::new()),
+            (Key::KpDecimal, DigitalInputState::new()),
+            (Key::KpDivide, DigitalInputState::new()),
+            (Key::KpMultiply, DigitalInputState::new()),
+            (Key::KpSubtract, DigitalInputState::new()),
+            (Key::KpAdd, DigitalInputState::new()),
+            (Key::KpEnter, DigitalInputState::new()),
+            (Key::KpEqual, DigitalInputState::new()),
+            (Key::LeftShift, DigitalInputState::new()),
+            (Key::LeftControl, DigitalInputState::new()),
+            (Key::LeftAlt, DigitalInputState::new()),
+            (Key::LeftSuper, DigitalInputState::new()),
+            (Key::RightShift, DigitalInputState::new()),
+            (Key::RightControl, DigitalInputState::new()),
+            (Key::RightAlt, DigitalInputState::new()),
+            (Key::RightSuper, DigitalInputState::new()),
+            (Key::Menu, DigitalInputState::new()),
+            (Key::Unknown, DigitalInputState::new()),            
+        ]);
+
         Self {
             key_states
         }
     }
 
-    pub fn get_key_state(&self, key: BastardKey) -> DigitalInputState {
-        self.key_states
+    pub fn toggle_key_state(&self, key: &Key) {
+        let mut dis = self.key_states[key];
+        dis.toggle()
     }
 }
 
@@ -186,194 +309,3 @@ fn create_whitespace_cstring_with_len(len: usize) -> CString {
     unsafe { CString::from_vec_unchecked(buffer) }
 }
 
-#[repr(i32)]
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, EnumIter, EnumString)]
-pub enum BastardKey {
-    Space = glfw::ffi::KEY_SPACE,
-    Apostrophe = glfw::ffi::KEY_APOSTROPHE,
-    Comma = glfw::ffi::KEY_COMMA,
-    Minus = glfw::ffi::KEY_MINUS,
-    Period = glfw::ffi::KEY_PERIOD,
-    Slash = glfw::ffi::KEY_SLASH,
-    Num0 = glfw::ffi::KEY_0,
-    Num1 = glfw::ffi::KEY_1,
-    Num2 = glfw::ffi::KEY_2,
-    Num3 = glfw::ffi::KEY_3,
-    Num4 = glfw::ffi::KEY_4,
-    Num5 = glfw::ffi::KEY_5,
-    Num6 = glfw::ffi::KEY_6,
-    Num7 = glfw::ffi::KEY_7,
-    Num8 = glfw::ffi::KEY_8,
-    Num9 = glfw::ffi::KEY_9,
-    Semicolon = glfw::ffi::KEY_SEMICOLON,
-    Equal = glfw::ffi::KEY_EQUAL,
-    A = glfw::ffi::KEY_A,
-    B = glfw::ffi::KEY_B,
-    C = glfw::ffi::KEY_C,
-    D = glfw::ffi::KEY_D,
-    E = glfw::ffi::KEY_E,
-    F = glfw::ffi::KEY_F,
-    G = glfw::ffi::KEY_G,
-    H = glfw::ffi::KEY_H,
-    I = glfw::ffi::KEY_I,
-    J = glfw::ffi::KEY_J,
-    K = glfw::ffi::KEY_K,
-    L = glfw::ffi::KEY_L,
-    M = glfw::ffi::KEY_M,
-    N = glfw::ffi::KEY_N,
-    O = glfw::ffi::KEY_O,
-    P = glfw::ffi::KEY_P,
-    Q = glfw::ffi::KEY_Q,
-    R = glfw::ffi::KEY_R,
-    S = glfw::ffi::KEY_S,
-    T = glfw::ffi::KEY_T,
-    U = glfw::ffi::KEY_U,
-    V = glfw::ffi::KEY_V,
-    W = glfw::ffi::KEY_W,
-    X = glfw::ffi::KEY_X,
-    Y = glfw::ffi::KEY_Y,
-    Z = glfw::ffi::KEY_Z,
-    LeftBracket = glfw::ffi::KEY_LEFT_BRACKET,
-    Backslash = glfw::ffi::KEY_BACKSLASH,
-    RightBracket = glfw::ffi::KEY_RIGHT_BRACKET,
-    GraveAccent = glfw::ffi::KEY_GRAVE_ACCENT,
-    World1 = glfw::ffi::KEY_WORLD_1,
-    World2 = glfw::ffi::KEY_WORLD_2,
-
-    Escape = glfw::ffi::KEY_ESCAPE,
-    Enter = glfw::ffi::KEY_ENTER,
-    Tab = glfw::ffi::KEY_TAB,
-    Backspace = glfw::ffi::KEY_BACKSPACE,
-    Insert = glfw::ffi::KEY_INSERT,
-    Delete = glfw::ffi::KEY_DELETE,
-    Right = glfw::ffi::KEY_RIGHT,
-    Left = glfw::ffi::KEY_LEFT,
-    Down = glfw::ffi::KEY_DOWN,
-    Up = glfw::ffi::KEY_UP,
-    PageUp = glfw::ffi::KEY_PAGE_UP,
-    PageDown = glfw::ffi::KEY_PAGE_DOWN,
-    Home = glfw::ffi::KEY_HOME,
-    End = glfw::ffi::KEY_END,
-    CapsLock = glfw::ffi::KEY_CAPS_LOCK,
-    ScrollLock = glfw::ffi::KEY_SCROLL_LOCK,
-    NumLock = glfw::ffi::KEY_NUM_LOCK,
-    PrintScreen = glfw::ffi::KEY_PRINT_SCREEN,
-    Pause = glfw::ffi::KEY_PAUSE,
-    F1 = glfw::ffi::KEY_F1,
-    F2 = glfw::ffi::KEY_F2,
-    F3 = glfw::ffi::KEY_F3,
-    F4 = glfw::ffi::KEY_F4,
-    F5 = glfw::ffi::KEY_F5,
-    F6 = glfw::ffi::KEY_F6,
-    F7 = glfw::ffi::KEY_F7,
-    F8 = glfw::ffi::KEY_F8,
-    F9 = glfw::ffi::KEY_F9,
-    F10 = glfw::ffi::KEY_F10,
-    F11 = glfw::ffi::KEY_F11,
-    F12 = glfw::ffi::KEY_F12,
-    F13 = glfw::ffi::KEY_F13,
-    F14 = glfw::ffi::KEY_F14,
-    F15 = glfw::ffi::KEY_F15,
-    F16 = glfw::ffi::KEY_F16,
-    F17 = glfw::ffi::KEY_F17,
-    F18 = glfw::ffi::KEY_F18,
-    F19 = glfw::ffi::KEY_F19,
-    F20 = glfw::ffi::KEY_F20,
-    F21 = glfw::ffi::KEY_F21,
-    F22 = glfw::ffi::KEY_F22,
-    F23 = glfw::ffi::KEY_F23,
-    F24 = glfw::ffi::KEY_F24,
-    F25 = glfw::ffi::KEY_F25,
-    Kp0 = glfw::ffi::KEY_KP_0,
-    Kp1 = glfw::ffi::KEY_KP_1,
-    Kp2 = glfw::ffi::KEY_KP_2,
-    Kp3 = glfw::ffi::KEY_KP_3,
-    Kp4 = glfw::ffi::KEY_KP_4,
-    Kp5 = glfw::ffi::KEY_KP_5,
-    Kp6 = glfw::ffi::KEY_KP_6,
-    Kp7 = glfw::ffi::KEY_KP_7,
-    Kp8 = glfw::ffi::KEY_KP_8,
-    Kp9 = glfw::ffi::KEY_KP_9,
-    KpDecimal = glfw::ffi::KEY_KP_DECIMAL,
-    KpDivide = glfw::ffi::KEY_KP_DIVIDE,
-    KpMultiply = glfw::ffi::KEY_KP_MULTIPLY,
-    KpSubtract = glfw::ffi::KEY_KP_SUBTRACT,
-    KpAdd = glfw::ffi::KEY_KP_ADD,
-    KpEnter = glfw::ffi::KEY_KP_ENTER,
-    KpEqual = glfw::ffi::KEY_KP_EQUAL,
-    LeftShift = glfw::ffi::KEY_LEFT_SHIFT,
-    LeftControl = glfw::ffi::KEY_LEFT_CONTROL,
-    LeftAlt = glfw::ffi::KEY_LEFT_ALT,
-    LeftSuper = glfw::ffi::KEY_LEFT_SUPER,
-    RightShift = glfw::ffi::KEY_RIGHT_SHIFT,
-    RightControl = glfw::ffi::KEY_RIGHT_CONTROL,
-    RightAlt = glfw::ffi::KEY_RIGHT_ALT,
-    RightSuper = glfw::ffi::KEY_RIGHT_SUPER,
-    Menu = glfw::ffi::KEY_MENU,
-    Unknown = glfw::ffi::KEY_UNKNOWN,
-}
-
-/// Wrapper around `glfwGetKeyName`
-fn bastard_get_key_name(key: Option<BastardKey>, scancode: Option<glfw::Scancode>) -> Option<String> {
-    unsafe {
-        glfw::string_from_nullable_c_str(glfw::ffi::glfwGetKeyName(
-            match key {
-                Some(k) => k as std::os::raw::c_int,
-                None => glfw::ffi::KEY_UNKNOWN,
-            },
-            scancode.unwrap_or(glfw::ffi::KEY_UNKNOWN),
-        ))
-    }
-}
-
-/// Wrapper around `glfwGetKeyName`
-#[deprecated(
-    since = "0.16.0",
-    note = "'key_name' can cause a segfault, use 'get_key_name' instead"
-)]
-fn bastard_key_name(key: Option<BastardKey>, scancode: Option<glfw::Scancode>) -> String {
-    unsafe {
-        glfw::string_from_c_str(glfw::ffi::glfwGetKeyName(
-            match key {
-                Some(k) => k as std::os::raw::c_int,
-                None => glfw::ffi::KEY_UNKNOWN,
-            },
-            scancode.unwrap_or(glfw::ffi::KEY_UNKNOWN),
-        ))
-    }
-}
-
-/// Wrapper around `glfwGetKeyScancode`.
-fn bastard_get_key_scancode(key: Option<BastardKey>) -> Option<glfw::Scancode> {
-    unsafe {
-        match glfw::ffi::glfwGetKeyScancode(match key {
-            Some(key) => key as std::os::raw::c_int,
-            None => glfw::ffi::KEY_UNKNOWN,
-        }) {
-            glfw::ffi::KEY_UNKNOWN => None,
-            scancode => Some(scancode as glfw::Scancode),
-        }
-    }
-}
-
-impl BastardKey {
-    /// Wrapper around `glfwGetKeyName` without scancode
-    #[deprecated(
-        since = "0.16.0",
-        note = "Key method 'name' can cause a segfault, use 'get_name' instead"
-    )]
-    pub fn name(&self) -> String {
-        #[allow(deprecated)]
-        bastard_key_name(Some(*self), None)
-    }
-
-    /// Wrapper around `glfwGetKeyName` without scancode
-    pub fn get_name(&self) -> Option<String> {
-        bastard_get_key_name(Some(*self), None)
-    }
-
-    /// Wrapper around `glfwGetKeyScancode`.
-    pub fn get_scancode(&self) -> Option<glfw::Scancode> {
-        bastard_get_key_scancode(Some(*self))
-    }
-}
