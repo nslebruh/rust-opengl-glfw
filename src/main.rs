@@ -138,16 +138,14 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, ic: 
             window.set_should_close(true)
         },
         glfw::WindowEvent::Key(key, _, action, _) if action != Action::Repeat => {
-            let _ = &ic.toggle_key_state(&key);
-            //let bk = BastardKey::from_str(key.get_name().unwrap().as_ref()).unwrap();
-            println!("key: {:?}, action: {:?}", key, action)
-            //input_controller.get_key_state(bk).toggle();
+            let _ = &ic.set_key_state(&key, &action);
+            //println!("key: {:?}, action: {:?}", key, action)
         },
         glfw::WindowEvent::CursorPos(x, y) => {
             println!("x: {}, y: {}", x, y)
         },
         glfw::WindowEvent::MouseButton(mouse_button, action, _) => {
-            println!("mouse_button: {:?}, action: {:?}", mouse_button, action)
+            let _ = &ic.set_mouse_state(&mouse_button, &action);
         },
         glfw::WindowEvent::Scroll(x, y) => {
             println!("x: {}, y: {}", x, y)

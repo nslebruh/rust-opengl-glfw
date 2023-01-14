@@ -5,37 +5,13 @@ extern crate gl;
 use std::collections::HashMap;
 use std::ffi::{CString, CStr};
 use cgmath::{Vector3, Vector2};
-use glfw::Key;
+use glfw::{Key, MouseButton, Action};
 use gl::{types::*, VERTEX_SHADER, FRAGMENT_SHADER};
 
 
 
 
 pub type Triangle = Vector3<Vector2<f32>>;
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub struct DigitalInputState {
-    pub pressed: bool,
-    pub released: bool
-}
-
-impl DigitalInputState {
-    pub fn new() -> DigitalInputState {
-        Self {
-            pressed: false,
-            released: false
-        }
-    }
-
-    pub fn toggle(&mut self) {
-        self.pressed = !self.pressed;
-        self.released = !self.released;
-        println!("{}", match self.pressed {
-            true => "pressed",
-            false => "released"
-        })
-    }
-}
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct Keybind {
@@ -52,143 +28,163 @@ pub struct InputFunction {
 #[derive(Debug, Clone)]
 pub struct InputController {
     //keybinds: HashMap<Key, Keybind>,
-    key_states: HashMap<Key, DigitalInputState>
+    key_states: HashMap<Key, Action>,
+    mouse_states: HashMap<MouseButton, Action>
 }
 
 impl InputController {
     pub fn init() -> Self {
-        let key_states: HashMap<Key, DigitalInputState> = HashMap::from([
-            (Key::Space, DigitalInputState::new()),
-            (Key::Apostrophe, DigitalInputState::new()),
-            (Key::Comma, DigitalInputState::new()),
-            (Key::Minus, DigitalInputState::new()),
-            (Key::Period, DigitalInputState::new()),
-            (Key::Slash, DigitalInputState::new()),
-            (Key::Num0, DigitalInputState::new()),
-            (Key::Num1, DigitalInputState::new()),
-            (Key::Num2, DigitalInputState::new()),
-            (Key::Num3, DigitalInputState::new()),
-            (Key::Num4, DigitalInputState::new()),
-            (Key::Num5, DigitalInputState::new()),
-            (Key::Num6, DigitalInputState::new()),
-            (Key::Num7, DigitalInputState::new()),
-            (Key::Num8, DigitalInputState::new()),
-            (Key::Num9, DigitalInputState::new()),
-            (Key::Semicolon, DigitalInputState::new()),
-            (Key::Equal, DigitalInputState::new()),
-            (Key::A, DigitalInputState::new()),
-            (Key::B, DigitalInputState::new()),
-            (Key::C, DigitalInputState::new()),
-            (Key::D, DigitalInputState::new()),
-            (Key::E, DigitalInputState::new()),
-            (Key::F, DigitalInputState::new()),
-            (Key::G, DigitalInputState::new()),
-            (Key::H, DigitalInputState::new()),
-            (Key::I, DigitalInputState::new()),
-            (Key::J, DigitalInputState::new()),
-            (Key::K, DigitalInputState::new()),
-            (Key::L, DigitalInputState::new()),
-            (Key::M, DigitalInputState::new()),
-            (Key::N, DigitalInputState::new()),
-            (Key::O, DigitalInputState::new()),
-            (Key::P, DigitalInputState::new()),
-            (Key::Q, DigitalInputState::new()),
-            (Key::R, DigitalInputState::new()),
-            (Key::S, DigitalInputState::new()),
-            (Key::T, DigitalInputState::new()),
-            (Key::U, DigitalInputState::new()),
-            (Key::V, DigitalInputState::new()),
-            (Key::W, DigitalInputState::new()),
-            (Key::X, DigitalInputState::new()),
-            (Key::Y, DigitalInputState::new()),
-            (Key::Z, DigitalInputState::new()),
-            (Key::LeftBracket, DigitalInputState::new()),
-            (Key::Backslash, DigitalInputState::new()),
-            (Key::RightBracket, DigitalInputState::new()),
-            (Key::GraveAccent, DigitalInputState::new()),
-            (Key::World1, DigitalInputState::new()),
-            (Key::World2, DigitalInputState::new()),
-            (Key::Escape, DigitalInputState::new()),
-            (Key::Enter, DigitalInputState::new()),
-            (Key::Tab, DigitalInputState::new()),
-            (Key::Backspace, DigitalInputState::new()),
-            (Key::Insert, DigitalInputState::new()),
-            (Key::Delete, DigitalInputState::new()),
-            (Key::Right, DigitalInputState::new()),
-            (Key::Left, DigitalInputState::new()),
-            (Key::Down, DigitalInputState::new()),
-            (Key::Up, DigitalInputState::new()),
-            (Key::PageUp, DigitalInputState::new()),
-            (Key::PageDown, DigitalInputState::new()),
-            (Key::Home, DigitalInputState::new()),
-            (Key::End, DigitalInputState::new()),
-            (Key::CapsLock, DigitalInputState::new()),
-            (Key::ScrollLock, DigitalInputState::new()),
-            (Key::NumLock, DigitalInputState::new()),
-            (Key::PrintScreen, DigitalInputState::new()),
-            (Key::Pause, DigitalInputState::new()),
-            (Key::F1, DigitalInputState::new()),
-            (Key::F2, DigitalInputState::new()),
-            (Key::F3, DigitalInputState::new()),
-            (Key::F4, DigitalInputState::new()),
-            (Key::F5, DigitalInputState::new()),
-            (Key::F6, DigitalInputState::new()),
-            (Key::F7, DigitalInputState::new()),
-            (Key::F8, DigitalInputState::new()),
-            (Key::F9, DigitalInputState::new()),
-            (Key::F10, DigitalInputState::new()),
-            (Key::F11, DigitalInputState::new()),
-            (Key::F12, DigitalInputState::new()),
-            (Key::F13, DigitalInputState::new()),
-            (Key::F14, DigitalInputState::new()),
-            (Key::F15, DigitalInputState::new()),
-            (Key::F16, DigitalInputState::new()),
-            (Key::F17, DigitalInputState::new()),
-            (Key::F18, DigitalInputState::new()),
-            (Key::F19, DigitalInputState::new()),
-            (Key::F20, DigitalInputState::new()),
-            (Key::F21, DigitalInputState::new()),
-            (Key::F22, DigitalInputState::new()),
-            (Key::F23, DigitalInputState::new()),
-            (Key::F24, DigitalInputState::new()),
-            (Key::F25, DigitalInputState::new()),
-            (Key::Kp0, DigitalInputState::new()),
-            (Key::Kp1, DigitalInputState::new()),
-            (Key::Kp2, DigitalInputState::new()),
-            (Key::Kp3, DigitalInputState::new()),
-            (Key::Kp4, DigitalInputState::new()),
-            (Key::Kp5, DigitalInputState::new()),
-            (Key::Kp6, DigitalInputState::new()),
-            (Key::Kp7, DigitalInputState::new()),
-            (Key::Kp8, DigitalInputState::new()),
-            (Key::Kp9, DigitalInputState::new()),
-            (Key::KpDecimal, DigitalInputState::new()),
-            (Key::KpDivide, DigitalInputState::new()),
-            (Key::KpMultiply, DigitalInputState::new()),
-            (Key::KpSubtract, DigitalInputState::new()),
-            (Key::KpAdd, DigitalInputState::new()),
-            (Key::KpEnter, DigitalInputState::new()),
-            (Key::KpEqual, DigitalInputState::new()),
-            (Key::LeftShift, DigitalInputState::new()),
-            (Key::LeftControl, DigitalInputState::new()),
-            (Key::LeftAlt, DigitalInputState::new()),
-            (Key::LeftSuper, DigitalInputState::new()),
-            (Key::RightShift, DigitalInputState::new()),
-            (Key::RightControl, DigitalInputState::new()),
-            (Key::RightAlt, DigitalInputState::new()),
-            (Key::RightSuper, DigitalInputState::new()),
-            (Key::Menu, DigitalInputState::new()),
-            (Key::Unknown, DigitalInputState::new()),            
+        let key_states: HashMap<Key, Action> = HashMap::from([
+            (Key::Space, Action::Release),
+            (Key::Apostrophe, Action::Release),
+            (Key::Comma, Action::Release),
+            (Key::Minus, Action::Release),
+            (Key::Period, Action::Release),
+            (Key::Slash, Action::Release),
+            (Key::Num0, Action::Release),
+            (Key::Num1, Action::Release),
+            (Key::Num2, Action::Release),
+            (Key::Num3, Action::Release),
+            (Key::Num4, Action::Release),
+            (Key::Num5, Action::Release),
+            (Key::Num6, Action::Release),
+            (Key::Num7, Action::Release),
+            (Key::Num8, Action::Release),
+            (Key::Num9, Action::Release),
+            (Key::Semicolon, Action::Release),
+            (Key::Equal, Action::Release),
+            (Key::A, Action::Release),
+            (Key::B, Action::Release),
+            (Key::C, Action::Release),
+            (Key::D, Action::Release),
+            (Key::E, Action::Release),
+            (Key::F, Action::Release),
+            (Key::G, Action::Release),
+            (Key::H, Action::Release),
+            (Key::I, Action::Release),
+            (Key::J, Action::Release),
+            (Key::K, Action::Release),
+            (Key::L, Action::Release),
+            (Key::M, Action::Release),
+            (Key::N, Action::Release),
+            (Key::O, Action::Release),
+            (Key::P, Action::Release),
+            (Key::Q, Action::Release),
+            (Key::R, Action::Release),
+            (Key::S, Action::Release),
+            (Key::T, Action::Release),
+            (Key::U, Action::Release),
+            (Key::V, Action::Release),
+            (Key::W, Action::Release),
+            (Key::X, Action::Release),
+            (Key::Y, Action::Release),
+            (Key::Z, Action::Release),
+            (Key::LeftBracket, Action::Release),
+            (Key::Backslash, Action::Release),
+            (Key::RightBracket, Action::Release),
+            (Key::GraveAccent, Action::Release),
+            (Key::World1, Action::Release),
+            (Key::World2, Action::Release),
+            (Key::Escape, Action::Release),
+            (Key::Enter, Action::Release),
+            (Key::Tab, Action::Release),
+            (Key::Backspace, Action::Release),
+            (Key::Insert, Action::Release),
+            (Key::Delete, Action::Release),
+            (Key::Right, Action::Release),
+            (Key::Left, Action::Release),
+            (Key::Down, Action::Release),
+            (Key::Up, Action::Release),
+            (Key::PageUp, Action::Release),
+            (Key::PageDown, Action::Release),
+            (Key::Home, Action::Release),
+            (Key::End, Action::Release),
+            (Key::CapsLock, Action::Release),
+            (Key::ScrollLock, Action::Release),
+            (Key::NumLock, Action::Release),
+            (Key::PrintScreen, Action::Release),
+            (Key::Pause, Action::Release),
+            (Key::F1, Action::Release),
+            (Key::F2, Action::Release),
+            (Key::F3, Action::Release),
+            (Key::F4, Action::Release),
+            (Key::F5, Action::Release),
+            (Key::F6, Action::Release),
+            (Key::F7, Action::Release),
+            (Key::F8, Action::Release),
+            (Key::F9, Action::Release),
+            (Key::F10, Action::Release),
+            (Key::F11, Action::Release),
+            (Key::F12, Action::Release),
+            (Key::F13, Action::Release),
+            (Key::F14, Action::Release),
+            (Key::F15, Action::Release),
+            (Key::F16, Action::Release),
+            (Key::F17, Action::Release),
+            (Key::F18, Action::Release),
+            (Key::F19, Action::Release),
+            (Key::F20, Action::Release),
+            (Key::F21, Action::Release),
+            (Key::F22, Action::Release),
+            (Key::F23, Action::Release),
+            (Key::F24, Action::Release),
+            (Key::F25, Action::Release),
+            (Key::Kp0, Action::Release),
+            (Key::Kp1, Action::Release),
+            (Key::Kp2, Action::Release),
+            (Key::Kp3, Action::Release),
+            (Key::Kp4, Action::Release),
+            (Key::Kp5, Action::Release),
+            (Key::Kp6, Action::Release),
+            (Key::Kp7, Action::Release),
+            (Key::Kp8, Action::Release),
+            (Key::Kp9, Action::Release),
+            (Key::KpDecimal, Action::Release),
+            (Key::KpDivide, Action::Release),
+            (Key::KpMultiply, Action::Release),
+            (Key::KpSubtract, Action::Release),
+            (Key::KpAdd, Action::Release),
+            (Key::KpEnter, Action::Release),
+            (Key::KpEqual, Action::Release),
+            (Key::LeftShift, Action::Release),
+            (Key::LeftControl, Action::Release),
+            (Key::LeftAlt, Action::Release),
+            (Key::LeftSuper, Action::Release),
+            (Key::RightShift, Action::Release),
+            (Key::RightControl, Action::Release),
+            (Key::RightAlt, Action::Release),
+            (Key::RightSuper, Action::Release),
+            (Key::Menu, Action::Release),
+            (Key::Unknown, Action::Release),            
+        ]);
+        let mouse_states = HashMap::from([
+            (MouseButton::Button1, Action::Release),
+            (MouseButton::Button2, Action::Release),
+            (MouseButton::Button3, Action::Release),
+            (MouseButton::Button4, Action::Release),
+            (MouseButton::Button5, Action::Release),
+            (MouseButton::Button6, Action::Release),
+            (MouseButton::Button7, Action::Release),
+            (MouseButton::Button8, Action::Release)
         ]);
 
         Self {
-            key_states
+            key_states,
+            mouse_states
         }
     }
 
-    pub fn toggle_key_state(&self, key: &Key) {
-        let mut dis = self.key_states[key];
-        dis.toggle()
+    pub fn set_key_state(&mut self, key: &Key, action: &Action) {
+        let hashed_action = self.key_states.get_mut(key).unwrap();
+        *hashed_action = *action;
+        println!("key: {:?}, action: {:?}", key, action);
+        
+    }
+
+    pub fn set_mouse_state(&mut self, mouse: &MouseButton, action: &Action) {
+        let hashed_action = self.mouse_states.get_mut(mouse).unwrap();
+        *hashed_action = *action;
+        println!("key: {:?}, action: {:?}", mouse, action);
     }
 }
 
