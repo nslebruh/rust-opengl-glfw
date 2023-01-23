@@ -1,160 +1,272 @@
 mod util;
 mod input_controller;
+mod game_controller;
+mod input_functions;
+mod camera;
 
 extern crate glfw;
 extern crate gl;
+extern crate lazy_static;
 
-use std::{ffi::CString, mem::{size_of_val, size_of}};
-use cgmath::{Vector2, Vector3, vec2, vec3};
-use util::*;
-use input_controller::InputController;
+use std::{mem::{size_of_val, size_of}, sync::mpsc::Receiver};
+use camera::Camera;
+use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
+use game_controller::GameController;
+use input_controller::{InputController, InputFunctionArguments};
+use util::{*, shader::Shader};
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
-use glfw::{Action, Context, Key};
+use glfw::{Context, Window, Action};
+
+const SCR_WIDTH: u32 = 1280;
+const SCR_HEIGHT: u32 = 720;
 
 
 fn main() {
+    let mut camera = Camera {
+        position: Point3::new(0.0, 0.0, 3.0),
+        ..Default::default()
+    };
+
+    let mut first_mouse = true;
+    let mut last_x: f32 = SCR_WIDTH as f32 / 2.0;
+    let mut last_y: f32 = SCR_HEIGHT as f32 / 2.0;
+
+    let mut delta_time: f32;
+    let mut last_frame: f32 = 0.0;
+
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
-    glfw.window_hint(glfw::WindowHint::ContextVersion(4, 6));
+    glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+    #[cfg(target_os = "macos")]
+    glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
 
-    let (mut window, events) = glfw.create_window(300, 300, "Hello this is window", glfw::WindowMode::Windowed)
+    let (mut window, events) = glfw.create_window(SCR_WIDTH, SCR_HEIGHT, "Hello this is window", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 
-    let (screen_width, screen_height) = window.get_framebuffer_size();
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
-    let vertices: Vec<Triangle>  = vec![
-        vec3(
-            vec2(-0.5, 0.0),
-            vec2(0.0, 0.5),
-            vec2(0.5, 0.0)
-        )
-        
+    unsafe {
+        gl::Enable(gl::DEPTH_TEST);
+    }
+
+    window.make_current();
+    window.set_cursor_pos_polling(true);
+    window.set_scroll_polling(true);
+    window.set_framebuffer_size_polling(true);
+    window.set_cursor_mode(glfw::CursorMode::Disabled);
+
+    let vertices: Vec<f32> = vec![
+         0.5,  0.5, 0.0,    // 0 front top right
+         0.5, -0.5, 0.0,    // 1 front bottom right
+        -0.5, -0.5, 0.0,    // 2 front bottom left
+        -0.5,  0.5, 0.0,    // 3 front top left
+         0.5,  0.5, 0.5,    // 4 back top right
+         0.5, -0.5, 0.5,    // 5 back bottom right
+        -0.5, -0.5, 0.5,    // 6 back bottom left
+        -0.5,  0.5, 0.5     // 7 back top left
+
     ];
 
+    let indices = [
+        0, 1, 3,    //
+        1, 2, 3,    // bottom face
+        4, 5, 0,    //
+        5, 1, 0,    // left face
+        7, 6, 4,    //
+        6, 5, 4,    // top face
+        7, 6, 3,    //
+        6, 2, 3,    // right face
+        4, 0, 7,    //
+        0, 3, 7,    // top face
+        2, 6, 1,    //  
+        6, 5, 1     // bottom face
+
+    ];
+
+    let cube_positions: Vec<Vector3<f32>> = vec![
+        vec3(0.0, 0.0, -5.0),
+        vec3(2.0, 5.0, -15.0),
+        vec3(-1.5, -2.2, -2.5),
+        vec3(-3.8, -2.0, -12.3),
+        vec3(2.4, -0.4, -3.5),
+        vec3(-1.7, 3.0, -7.5),
+        vec3(1.3, -2.0, -2.5),
+        vec3(1.5, 2.0, -2.5),
+        vec3(1.5, 0.2, -1.5),
+        vec3(-1.3, 1.0, -1.5)
+    ];
+
+
+    //let vertices: Vec<f32> = vec![
+    //     0.5,  0.5, 0.0,  // top right
+    //     0.5, -0.5, 0.0,  // bottom right
+    //    -0.5, -0.5, 0.0,  // bottom left
+    //    -0.5,  0.5, 0.0   // top left
+    //];
+
+    //let indices = [
+    //    0, 1, 3,
+    //    1, 2, 3
+    //];
+
     let mut vbo: GLuint = 0;
+    let mut vao: GLuint = 0;
+    let mut ebo: GLuint = 0;
     unsafe {
+        gl::GenVertexArrays(1, &mut vao);
         gl::GenBuffers(1,  &mut vbo);
+        gl::GenBuffers(1,  &mut ebo);
+        gl::BindVertexArray(vao);
     }
+
     unsafe {
         gl::BindBuffer(ARRAY_BUFFER, vbo);
         gl::BufferData(
             gl::ARRAY_BUFFER,
-            size_of_val(&vertices) as isize,
+            (vertices.len() * std::mem::size_of::<GLfloat>()) as GLsizeiptr,
             vertices.as_ptr().cast(),
             gl::STATIC_DRAW,
         );
-        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-    }
-
-    let mut vao: GLuint = 0;
-    unsafe {
-        gl::GenVertexArrays(1, &mut vao);
     }
 
     unsafe {
-        gl::BindVertexArray(vao);
-        gl::BindBuffer(ARRAY_BUFFER, vbo);
-
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::BufferData(
+            gl::ELEMENT_ARRAY_BUFFER,
+            size_of_val(&indices) as GLsizeiptr,
+            indices.as_ptr().cast(),
+            gl::STATIC_DRAW
+        )
+    }
+    unsafe {
         gl::EnableVertexAttribArray(0);
         gl::VertexAttribPointer(
             0,
-            2,
+            3,
             gl::FLOAT,
             gl::FALSE,
-            size_of::<Vector2<f32>>().try_into().unwrap(),
+            (3 * size_of::<f32>()).try_into().unwrap(),
             std::ptr::null()
         );
 
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         gl::BindVertexArray(0);
     }
-    
-    let vert = include_str!("../triangle.vert");
-    let frag = include_str!("../triangle.frag");
-
-    let vert_shader = vert_shader_from_source(&CString::new(vert).unwrap()).unwrap();
-    let frag_shader = frag_shader_from_source(&CString::new(frag).unwrap()).unwrap();
-
-    let program: GLuint = unsafe { gl::CreateProgram() };
-
-    unsafe {
-        gl::AttachShader(program, vert_shader);
-        gl::AttachShader(program, frag_shader);
-
-        gl::LinkProgram(program);
-
-        gl::DetachShader(program, vert_shader);
-        gl::DetachShader(program, frag_shader);
-    }
-
-    window.make_current();
-    window.set_key_polling(true);
-    window.set_cursor_pos_polling(true);
-    window.set_mouse_button_polling(true);
-    window.set_scroll_polling(true);
-
-
-    unsafe{
-        gl::Viewport(0, 0, screen_width, screen_height);
-        gl_clear_color(255, 119, 110, 255);
-    }
+    let shader_program = Shader::new("triangle.vert", "triangle.frag");
 
     let target_fps: f64 = 60.0;
     let mut last_time = glfw.get_time();
-    let mut ic = InputController::init();
+    let input_controller = InputController::init(None, None);
+    let mut game_controller = GameController::init();
 
+    unsafe {
+        gl::BindVertexArray(vao);
+    }
 
     while !window.should_close() {
 
-        let (w, h) = window.get_framebuffer_size();
-        let _ratio: f32 = w as f32 / h as f32;
+        let current_frame = glfw.get_time() as f32;
+        delta_time = current_frame - last_frame;
+        last_frame = current_frame;
+
+        process_events(&events, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
+
+        process_input(&mut window, &delta_time, &input_controller, &mut camera);
+        
+        game_controller.run_loop();
 
         unsafe {
-            gl::Viewport(0, 0, w, h);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl_clear_color(255, 119, 110, 255);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
-        unsafe { gl::UseProgram(program); }
+        
+        let (width, height) = window.get_framebuffer_size();
+
+        let time_value = glfw.get_time() as f32;
+        let green_color = time_value.sin() / 2.0 + 0.5;
+
+        let model: Matrix4<f32> = Matrix4::from_axis_angle(
+            vec3(0.5, 1.0, 0.0).normalize(),
+            Rad(glfw.get_time() as f32)
+        );
+        let view = camera.get_view_matrix();
+        let projection: Matrix4<f32> = perspective(Deg(camera.zoom), width as f32 / height as f32, 0.1, 100.0);
+
         unsafe {
-            gl::BindVertexArray(vao);
-            gl::DrawArrays(TRIANGLES, 0, (vertices.len() * 3) as GLsizei)
+            shader_program.setMat4("model", &model);
+            shader_program.setMat4("view", &view);
+            shader_program.setMat4("projection", &projection);
+            shader_program.set_vec4("ourColor", 0.0, green_color, 0.0, 1.0);
+        }
+        unsafe {
+            shader_program.useProgram();
+            //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
+
+            for (i, position) in cube_positions.iter().enumerate() {
+                let mut model: Matrix4<f32> = Matrix4::from_translation(*position);
+                let angle = 20.0 * i as f32;
+                model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));
+
+                shader_program.setMat4("model", &model);
+                gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
+                
+            }
+            
+            
         }
 
-        while glfw.get_time() < last_time + 1.0 / target_fps {
-        }
+        while glfw.get_time() < last_time + 1.0 / target_fps {}
         last_time += 1.0 / target_fps;
 
         window.swap_buffers();
-
         glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event, &mut ic);
-        }
-
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent, ic: &mut InputController) {
-    match event {
-        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-            window.set_should_close(true)
-        },
-        glfw::WindowEvent::Key(key, _, action, _) if action != Action::Repeat => {
-            let _ = &ic.set_key_state(&key, &action);
-            //println!("key: {:?}, action: {:?}", key, action)
-        },
-        glfw::WindowEvent::CursorPos(x, y) => {
-            println!("x: {}, y: {}", x, y)
-        },
-        glfw::WindowEvent::MouseButton(mouse_button, action, _) => {
-            let _ = &ic.set_mouse_state(&mouse_button, &action);
-        },
-        glfw::WindowEvent::Scroll(x, y) => {
-            println!("x: {}, y: {}", x, y)
-        }
+fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut bool, last_x: &mut f32, last_y: &mut f32, camera: &mut Camera) {
+    for (_, event) in glfw::flush_messages(&events) {
+        match event {
+            glfw::WindowEvent::FramebufferSize(width, height) => {
+                unsafe { gl::Viewport(0, 0, width, height) }
+            },
+            glfw::WindowEvent::CursorPos(x_pos, y_pos) => {
+                let (xpos, ypos) = (x_pos as f32, y_pos as f32);
+                if *first_mouse {
+                    *last_x = xpos;
+                    *last_y = ypos;
+                    *first_mouse = false;
+                }
 
-        _ => {}
+                let x_offset = xpos - *last_x;
+                let y_offset = *last_y - ypos;
+
+                *last_x = xpos;
+                *last_y = ypos;
+
+                camera.process_mouse_input(x_offset, y_offset, true)
+            },
+            glfw::WindowEvent::Scroll(_x_offset, y_offset) => {
+                camera.process_scroll_input(y_offset as f32);
+            },
+            _ => {}
+        }
     }
+}
+
+fn process_input(window: &mut Window, delta_time: &f32, input_controller: &InputController, camera: &mut Camera) {
+
+    for (key, val) in &input_controller.keybinds {
+        if window.get_key(*key) == Action::Press {
+            val.run(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
+        }
+    }
+
+    for (button, f) in &input_controller.mouse_keybinds {
+        if window.get_mouse_button(*button) == Action::Press {
+            f.run(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
+        }
+    }
+
 }
