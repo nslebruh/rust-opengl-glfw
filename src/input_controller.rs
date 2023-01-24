@@ -1,18 +1,41 @@
 extern crate gl;
 extern crate glfw;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::DerefMut};
 
-use glfw::{Key, MouseButton, Window};
+use glfw::{Key, MouseButton, Window, Action};
+use std::ops::Deref;
 
-use crate::camera::Camera;
-use crate::input_functions::INPUT_FUNCTIONS_VECTOR;
+use crate::{camera::Camera, input_functions::*};
 
-#[derive(Debug)]
+type InputFunctionType = fn(InputFunctionArguments) -> ();
+
+pub struct InputState(pub HashMap<Key, Action>);
+
+impl Deref for InputState {
+    type Target = HashMap<Key, Action>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for InputState {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+pub struct InputFunction(pub InputFunctionType);
+
 pub struct InputFunctionArguments<'a> {
     pub window: Option<&'a mut Window>,
     pub camera: Option<&'a mut Camera>,
-    pub delta_time: Option<&'a f32>
+    pub delta_time: Option<&'a f32>,
+    pub input_state: Option<&'a InputState>,
+    pub key: Option<Key>,
+    pub action: Option<&'a Action>,
+    pub _glfw: Option<&'a glfw::Glfw>
 }
 
 impl<'a> InputFunctionArguments<'a> {
@@ -20,7 +43,11 @@ impl<'a> InputFunctionArguments<'a> {
         Self {
             window: None,
             camera: None,
-            delta_time: None
+            delta_time: None,
+            input_state: None,
+            key: None,
+            action: None,
+            _glfw: None
         }
     }
 
@@ -44,30 +71,42 @@ impl<'a> InputFunctionArguments<'a> {
             ..self
         }
     }
-}
 
-#[derive(Clone, Copy)]
-pub struct InputFunction {
-    pub name: &'static str,
-    pub function: fn(args: InputFunctionArguments),
-
-}
-
-impl InputFunction {
-    pub fn new(name: &'static str, function: fn(args: InputFunctionArguments)) -> Self {
+    pub fn input_state(self, input_state: &'a InputState) -> Self {
         Self {
-            name,
-            function
+            input_state: Some(input_state),
+            ..self
         }
     }
-    pub fn run(&self, args: InputFunctionArguments) {
-        (self.function)(args)
+
+    pub fn key(self, key: Key) -> Self {
+        Self {
+            key: Some(key),
+            ..self
+        }
+    }
+
+    pub fn action(self, action: &'a Action) -> Self {
+        Self {
+            action: Some(action),
+            ..self
+        }
+    }
+
+    pub fn _glfw(self, _glfw: &'a glfw::Glfw) -> Self {
+        Self {
+            _glfw: Some(_glfw),
+            ..self
+        }
     }
 }
+
 
 pub struct InputController {
     pub keybinds: HashMap<Key, InputFunction>,
     pub mouse_keybinds: HashMap<MouseButton, InputFunction>,
+    pub input_state: HashMap<Key, Action>,
+    pub window_size: (i32, i32)
 }
 
 impl InputController {
@@ -82,10 +121,14 @@ impl InputController {
             Some(x) => x,
             None => InputController::create_mouse_keybinds_hashmap()
         };
-        
+        let is: HashMap<Key, Action> = keybinds.iter().map(|(k, _v)| ((*k, Action::Release))).collect();
+        let input_state: HashMap<Key, Action> = HashMap::from(is);
+
         Self {
             keybinds,
             mouse_keybinds,
+            input_state,
+            window_size: (1820, 720)
         }
     }
 
@@ -93,23 +136,23 @@ impl InputController {
         HashMap::from([
             (
                 Key::Escape,
-                *INPUT_FUNCTIONS_VECTOR.get(0).unwrap()
+                InputFunction(set_window_should_close)            
             ),
             (
                 Key::W,
-                *INPUT_FUNCTIONS_VECTOR.get(2).unwrap()
+                InputFunction(camera_forward)
             ),
             (
                 Key::A,
-                *INPUT_FUNCTIONS_VECTOR.get(4).unwrap()
+                InputFunction(camera_left)
             ),
             (
                 Key::S,
-                *INPUT_FUNCTIONS_VECTOR.get(3).unwrap()
+                InputFunction(camera_backward)
             ),
             (
                 Key::D,
-                *INPUT_FUNCTIONS_VECTOR.get(5).unwrap()
+                InputFunction(camera_right)
             ),
         ])
     }
@@ -118,6 +161,8 @@ impl InputController {
         HashMap::from([
             (
                 MouseButton::Button1,
-                InputFunction::new("Test2", |_| println!("Test2")))])
+                InputFunction(|_args| println!("test"))
+            )
+        ])
     }
 }

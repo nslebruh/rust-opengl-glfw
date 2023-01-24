@@ -15,7 +15,7 @@ use game_controller::GameController;
 use input_controller::{InputController, InputFunctionArguments};
 use util::{*, shader::Shader};
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
-use glfw::{Context, Window, Action};
+use glfw::{Context, Window, Action, Key};
 
 const SCR_WIDTH: u32 = 1280;
 const SCR_HEIGHT: u32 = 720;
@@ -50,7 +50,6 @@ fn main() {
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
     }
-
     window.make_current();
     window.set_cursor_pos_polling(true);
     window.set_scroll_polling(true);
@@ -156,10 +155,10 @@ fn main() {
     }
     let shader_program = Shader::new("triangle.vert", "triangle.frag");
 
-    let target_fps: f64 = 60.0;
     let mut last_time = glfw.get_time();
     let input_controller = InputController::init(None, None);
     let mut game_controller = GameController::init();
+    let target_fps: f64 = game_controller.frames_per_second;
 
     unsafe {
         gl::BindVertexArray(vao);
@@ -184,8 +183,6 @@ fn main() {
         
         let (width, height) = window.get_framebuffer_size();
 
-        let time_value = glfw.get_time() as f32;
-        let green_color = time_value.sin() / 2.0 + 0.5;
 
         let model: Matrix4<f32> = Matrix4::from_axis_angle(
             vec3(0.5, 1.0, 0.0).normalize(),
@@ -195,13 +192,13 @@ fn main() {
         let projection: Matrix4<f32> = perspective(Deg(camera.zoom), width as f32 / height as f32, 0.1, 100.0);
 
         unsafe {
-            shader_program.setMat4("model", &model);
-            shader_program.setMat4("view", &view);
-            shader_program.setMat4("projection", &projection);
-            shader_program.set_vec4("ourColor", 0.0, green_color, 0.0, 1.0);
+            shader_program.set_mat4("model", &model);
+            shader_program.set_mat4("view", &view);
+            shader_program.set_mat4("projection", &projection);
+            shader_program.set_vec4("ourColor", 1.0, 1.0, 1.0, 1.0);
         }
         unsafe {
-            shader_program.useProgram();
+            shader_program.use_program();
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
 
             for (i, position) in cube_positions.iter().enumerate() {
@@ -209,7 +206,7 @@ fn main() {
                 let angle = 20.0 * i as f32;
                 model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));
 
-                shader_program.setMat4("model", &model);
+                shader_program.set_mat4("model", &model);
                 gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
                 
             }
@@ -256,16 +253,15 @@ fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut
 }
 
 fn process_input(window: &mut Window, delta_time: &f32, input_controller: &InputController, camera: &mut Camera) {
-
     for (key, val) in &input_controller.keybinds {
-        if window.get_key(*key) == Action::Press {
-            val.run(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
+        if window.get_key(*key) != Action::Repeat {
+            val.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
         }
     }
 
     for (button, f) in &input_controller.mouse_keybinds {
-        if window.get_mouse_button(*button) == Action::Press {
-            f.run(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
+        if window.get_mouse_button(*button) != Action::Repeat {
+            f.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
         }
     }
 
