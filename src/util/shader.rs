@@ -29,7 +29,7 @@ impl Shader {
 
             gl::LinkProgram(id);
 
-            shader.checkCompileErrors(id, "PROGRAM");
+            shader.check_compile_errors(id, "PROGRAM");
 
             gl::DeleteShader(vertex_shader);
             gl::DeleteShader(fragment_shader);
@@ -40,27 +40,27 @@ impl Shader {
         shader
     }
 
-    pub unsafe fn useProgram(&self) {
+    pub unsafe fn use_program(&self) {
         gl::UseProgram(self.id)
     }
 
-    pub unsafe fn setBool(&self, name: &CStr, value: bool) {
+    pub unsafe fn _set_bool(&self, name: &CStr, value: bool) {
         gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value as i32)
     }
 
-    pub unsafe fn setInt(&self, name: &CStr, value: i32) {
+    pub unsafe fn _set_int(&self, name: &CStr, value: i32) {
         gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value)
     }
 
-    pub unsafe fn setFloat(&self, name: &CStr, value: f32) {
+    pub unsafe fn _set_float(&self, name: &CStr, value: f32) {
         gl::Uniform1f(gl::GetUniformLocation(self.id, name.as_ptr()), value)
     }
 
-    pub unsafe fn setVector3(&self, name: &CStr, value: &Vector3<f32>) {
+    pub unsafe fn _set_vector3(&self, name: &CStr, value: &Vector3<f32>) {
         gl::Uniform3fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, value.as_ptr())
     }
 
-    pub unsafe fn setVec3(&self, name: &CStr, x: f32, y: f32, z: f32) {
+    pub unsafe fn _set_vec3(&self, name: &CStr, x: f32, y: f32, z: f32) {
         gl::Uniform3f(gl::GetUniformLocation(self.id, name.as_ptr()), x, y, z)
     }
 
@@ -69,12 +69,12 @@ impl Shader {
         gl::Uniform4f(gl::GetUniformLocation(self.id, c_name.as_ptr()), x, y, z, w)
     }
 
-    pub unsafe fn setMat4(&self, name: &str, mat: &Matrix4<f32>) {
+    pub unsafe fn set_mat4(&self, name: &str, mat: &Matrix4<f32>) {
         let c_name = CString::new(name).unwrap();
         gl::UniformMatrix4fv(gl::GetUniformLocation(self.id, c_name.as_ptr()), 1, gl::FALSE, mat.as_ptr())
     }
 
-    unsafe fn checkCompileErrors(&self, shader: u32, type_: &str) {
+    unsafe fn check_compile_errors(&self, shader: u32, type_: &str) {
         let mut success = gl::FALSE as GLint;
         let mut info_log = Vec::with_capacity(1024);
         info_log.set_len(1024 - 1); // subtract 1 to skip the trailing null character

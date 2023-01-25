@@ -195,13 +195,13 @@ fn main() {
         let projection: Matrix4<f32> = perspective(Deg(camera.zoom), width as f32 / height as f32, 0.1, 100.0);
 
         unsafe {
-            shader_program.setMat4("model", &model);
-            shader_program.setMat4("view", &view);
-            shader_program.setMat4("projection", &projection);
+            shader_program.set_mat4("model", &model);
+            shader_program.set_mat4("view", &view);
+            shader_program.set_mat4("projection", &projection);
             shader_program.set_vec4("ourColor", 0.0, green_color, 0.0, 1.0);
         }
         unsafe {
-            shader_program.useProgram();
+            shader_program.use_program();
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
 
             for (i, position) in cube_positions.iter().enumerate() {
@@ -209,7 +209,7 @@ fn main() {
                 let angle = 20.0 * i as f32;
                 model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));
 
-                shader_program.setMat4("model", &model);
+                shader_program.set_mat4("model", &model);
                 gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
                 
             }

@@ -36,3 +36,22 @@ pub fn camera_left(args: InputFunctionArguments) {
 pub fn camera_right(args: InputFunctionArguments) {
     args.camera.unwrap().process_action_input(CameraMovement::RIGHT, args.delta_time.unwrap())
 }
+//pub fn toggle_cursor_mode(args: InputFunctionArguments) {
+//    let window = args.window.unwrap();
+//    let mode = match window.get_cursor_mode() {
+//        glfw::CursorMode::Normal => glfw::CursorMode::Disabled,
+//        _ => glfw::CursorMode::Normal,
+//    };
+//    window.set_cursor_mode(mode)
+//}
+
+//pub fn toggle_fullscreen(args: InputFunctionArguments) {
+//    let key = args.key.unwrap();
+//    let input_state = args.input_state.unwrap();
+//    let action = args.action.unwrap();
+//    let prev_state = input_state.get(key).unwrap();
+//    if Action::Press == *(action) && *prev_state == Action::Release {
+//        &input_state.insert(*key, *action);
+//    };
+//        
+//}
