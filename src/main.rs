@@ -3,6 +3,7 @@ mod input_controller;
 mod game_controller;
 mod input_functions;
 mod camera;
+mod keybinds;
 
 extern crate glfw;
 extern crate gl;
@@ -16,12 +17,14 @@ use input_controller::{InputController, InputFunctionArguments};
 use util::{*, shader::Shader};
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use glfw::{Context, Window, Action, Key};
+use keybinds::KeyBinding;
 
 const SCR_WIDTH: u32 = 1280;
 const SCR_HEIGHT: u32 = 720;
 
 
 fn main() {
+
     let mut camera = Camera {
         position: Point3::new(0.0, 0.0, 3.0),
         ..Default::default()
@@ -55,7 +58,9 @@ fn main() {
     window.set_scroll_polling(true);
     window.set_framebuffer_size_polling(true);
     window.set_cursor_mode(glfw::CursorMode::Disabled);
-
+    let mut keybindings: Vec<KeyBinding<Box<dyn Fn(InputFunctionArguments)>>> = vec![
+        KeyBinding::new(Key::Escape, false, Box::new(|_| {println!("key test")}))
+    ];
     let vertices: Vec<f32> = vec![
          0.5,  0.5, 0.0,    // 0 front top right
          0.5, -0.5, 0.0,    // 1 front bottom right
@@ -156,7 +161,7 @@ fn main() {
     let shader_program = Shader::new("triangle.vert", "triangle.frag");
 
     let mut last_time = glfw.get_time();
-    let input_controller = InputController::init(None, None);
+    let mut input_controller = InputController::init(None, None);
     let mut game_controller = GameController::init();
     let target_fps: f64 = game_controller.frames_per_second;
 
@@ -172,7 +177,7 @@ fn main() {
 
         process_events(&events, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
 
-        process_input(&mut window, &delta_time, &input_controller, &mut camera);
+        process_input(&mut window, &delta_time, &mut input_controller, &mut camera);
         
         game_controller.run_loop();
 
@@ -210,8 +215,6 @@ fn main() {
                 gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
                 
             }
-            
-            
         }
 
         while glfw.get_time() < last_time + 1.0 / target_fps {}
@@ -252,16 +255,24 @@ fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut
     }
 }
 
-fn process_input(window: &mut Window, delta_time: &f32, input_controller: &InputController, camera: &mut Camera) {
-    for (key, val) in &input_controller.keybinds {
-        if window.get_key(*key) != Action::Repeat {
-            val.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
+fn process_input(window: &mut Window, delta_time: &f32, input_controller: &mut InputController, camera: &mut Camera) {
+    for (key, func) in &input_controller.keybinds {
+        match window.get_key(*key) {
+            Action::Press if input_controller.input_state.get(&key) == Some(&Action::Release).or(Some(&Action::Press)) => {
+                func.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera).input_state(&input_controller.input_state));
+                input_controller.input_state.insert(*key, Action::Press);
+            },
+            Action::Release if input_controller.input_state.get(&key) == Some(&Action::Press) => {
+                input_controller.input_state.insert(*key, Action::Release);
+            }
+            _ => ()
         }
     }
 
-    for (button, f) in &input_controller.mouse_keybinds {
-        if window.get_mouse_button(*button) != Action::Repeat {
-            f.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera))
+    for (button, func) in &input_controller.mouse_keybinds {
+        match window.get_mouse_button(*button) {
+            Action::Press => func.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera)),
+            _ => ()
         }
     }
 

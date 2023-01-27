@@ -8,6 +8,9 @@ use std::ops::Deref;
 
 use crate::{camera::Camera, input_functions::*};
 
+
+
+
 type InputFunctionType = fn(InputFunctionArguments) -> ();
 
 pub struct InputState(pub HashMap<Key, Action>);
@@ -32,10 +35,11 @@ pub struct InputFunctionArguments<'a> {
     pub window: Option<&'a mut Window>,
     pub camera: Option<&'a mut Camera>,
     pub delta_time: Option<&'a f32>,
-    pub input_state: Option<&'a InputState>,
-    pub key: Option<Key>,
+    pub input_state: Option<&'a HashMap<Key, Action>>,
+    pub key: Option<&'a Key>,
     pub action: Option<&'a Action>,
-    pub _glfw: Option<&'a glfw::Glfw>
+    pub _glfw: Option<&'a glfw::Glfw>,
+    pub input_controller: Option<&'a mut InputController>
 }
 
 impl<'a> InputFunctionArguments<'a> {
@@ -47,7 +51,8 @@ impl<'a> InputFunctionArguments<'a> {
             input_state: None,
             key: None,
             action: None,
-            _glfw: None
+            _glfw: None,
+            input_controller: None
         }
     }
 
@@ -72,14 +77,14 @@ impl<'a> InputFunctionArguments<'a> {
         }
     }
 
-    pub fn input_state(self, input_state: &'a InputState) -> Self {
+    pub fn input_state(self, input_state: &'a HashMap<Key, Action>) -> Self {
         Self {
             input_state: Some(input_state),
             ..self
         }
     }
 
-    pub fn key(self, key: Key) -> Self {
+    pub fn key(self, key: &'a Key) -> Self {
         Self {
             key: Some(key),
             ..self
@@ -96,6 +101,13 @@ impl<'a> InputFunctionArguments<'a> {
     pub fn _glfw(self, _glfw: &'a glfw::Glfw) -> Self {
         Self {
             _glfw: Some(_glfw),
+            ..self
+        }
+    }
+
+    pub fn input_controller(self, input_controller: &'a mut InputController) -> Self {
+        Self {
+            input_controller: Some(input_controller),
             ..self
         }
     }
