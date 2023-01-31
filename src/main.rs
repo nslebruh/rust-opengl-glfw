@@ -10,7 +10,7 @@ extern crate gl;
 extern crate lazy_static;
 extern crate image;
 
-use std::{mem::{size_of_val, size_of}, sync::mpsc::Receiver, path::Path};
+use std::{mem::{size_of_val, size_of}, sync::mpsc::Receiver, path::Path, ffi::c_void};
 use camera::{Camera, CameraMovement};
 use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
 use game_controller::GameController;
@@ -81,14 +81,14 @@ fn main() {
     ];
 
     let vertices: Vec<f32> = vec![
-         0.5,  0.5, 0.0,    // 0 front top right
-         0.5, -0.5, 0.0,    // 1 front bottom right
-        -0.5, -0.5, 0.0,    // 2 front bottom left
-        -0.5,  0.5, 0.0,    // 3 front top left
-         0.5,  0.5, 0.5,    // 4 back top right
-         0.5, -0.5, 0.5,    // 5 back bottom right
-        -0.5, -0.5, 0.5,    // 6 back bottom left
-        -0.5,  0.5, 0.5     // 7 back top left
+         0.5,  0.5, 0.0, 1.0, 1.0,   // 0 front top right
+         0.5, -0.5, 0.0, 1.0, 0.0,   // 1 front bottom right
+        -0.5, -0.5, 0.0, 0.0, 0.0,   // 2 front bottom left
+        -0.5,  0.5, 0.0, 0.0, 1.0,   // 3 front top left
+         0.5,  0.5, 0.5, 1.0, 1.0,   // 4 back top right
+         0.5, -0.5, 0.5, 1.0, 0.0,   // 5 back bottom right
+        -0.5, -0.5, 0.5, 0.0, 0.0,   // 6 back bottom left
+        -0.5,  0.5, 0.5, 0.0, 1.0    // 7 back top left
 
     ];
 
@@ -103,7 +103,7 @@ fn main() {
         6, 2, 3,    // right face
         4, 0, 7,    //
         0, 3, 7,    // top face
-        2, 6, 1,    //  
+        2, 6, 1,    //
         6, 5, 1     // bottom face
 
     ];
@@ -160,8 +160,18 @@ fn main() {
             3,
             gl::FLOAT,
             gl::FALSE,
-            (3 * size_of::<f32>()).try_into().unwrap(),
+            (5 * size_of::<f32>()).try_into().unwrap(),
             std::ptr::null()
+        );
+
+        gl::EnableVertexAttribArray(1);
+        gl::VertexAttribPointer(
+            1,
+            2,
+            gl::FLOAT,
+            gl::FALSE,
+            (5 * size_of::<f32>()).try_into().unwrap(),
+            (2 * size_of::<f32>()) as *const c_void
         );
 
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -244,6 +254,7 @@ fn main() {
         }
         unsafe {
             shader_program.use_program();
+            gl::BindTexture(gl::TEXTURE_2D, texture);
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
 
             for (i, position) in cube_positions.iter().enumerate() {
@@ -253,7 +264,6 @@ fn main() {
 
                 shader_program.set_mat4("model", &model);
                 gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
-                
             }
         }
 
