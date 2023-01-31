@@ -32,6 +32,5 @@ pub fn toggle_cursor_mode(args: InputFunctionArguments) {
 }
 
 pub fn toggle_fullscreen(args: InputFunctionArguments) {
-    let prev_state = ((&args).input_state.unwrap()).get(&args.key.unwrap()).unwrap().clone();
-    if (&args).action.unwrap().clone() == Action::Press {}
+    
 }

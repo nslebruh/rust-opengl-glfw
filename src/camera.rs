@@ -9,7 +9,9 @@ pub enum CameraMovement {
     FORWARD,
     BACKWARD,
     LEFT,
-    RIGHT
+    RIGHT,
+    UP,
+    DOWN
 }
 
 const YAW: f32 = -90.0;
@@ -73,7 +75,13 @@ impl Camera {
             },
             CameraMovement::RIGHT => {
                 self.position += self.right * velocity;
-            }
+            },
+            CameraMovement::UP => {
+                self.position += self.up * velocity;
+            },
+            CameraMovement::DOWN => {
+                self.position += -(self.up * velocity);
+            },
         }
     }
 

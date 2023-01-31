@@ -8,15 +8,18 @@ mod keybinds;
 extern crate glfw;
 extern crate gl;
 extern crate lazy_static;
+extern crate image;
 
-use std::{mem::{size_of_val, size_of}, sync::mpsc::Receiver};
-use camera::Camera;
+use std::{mem::{size_of_val, size_of}, sync::mpsc::Receiver, path::Path};
+use camera::{Camera, CameraMovement};
 use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
 use game_controller::GameController;
-use input_controller::{InputController, InputFunctionArguments};
+use image::GenericImage;
+use input_controller::InputFunctionArguments;
+use input_functions::toggle_cursor_mode;
 use util::{*, shader::Shader};
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
-use glfw::{Context, Window, Action, Key};
+use glfw::{Context, Window, Key, Glfw};
 use keybinds::KeyBinding;
 
 const SCR_WIDTH: u32 = 1280;
@@ -24,6 +27,9 @@ const SCR_HEIGHT: u32 = 720;
 
 
 fn main() {
+
+    let img = image::open(&Path::new("container.jpg")).unwrap();
+    let data = img.raw_pixels();
 
     let mut camera = Camera {
         position: Point3::new(0.0, 0.0, 3.0),
@@ -36,6 +42,7 @@ fn main() {
 
     let mut delta_time: f32;
     let mut last_frame: f32 = 0.0;
+
 
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
@@ -53,14 +60,26 @@ fn main() {
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
     }
+
+
     window.make_current();
     window.set_cursor_pos_polling(true);
     window.set_scroll_polling(true);
     window.set_framebuffer_size_polling(true);
     window.set_cursor_mode(glfw::CursorMode::Disabled);
+
+
     let mut keybindings: Vec<KeyBinding<Box<dyn Fn(InputFunctionArguments)>>> = vec![
-        KeyBinding::new(Key::Escape, false, Box::new(|_| {println!("key test")}))
+        KeyBinding::new(Key::Escape, false, Box::new(|args: InputFunctionArguments| args.window.unwrap().set_should_close(true))),
+        KeyBinding::new(Key::W, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::FORWARD, args.delta_time.unwrap()))),
+        KeyBinding::new(Key::A, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::LEFT, args.delta_time.unwrap()))),
+        KeyBinding::new(Key::S, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::BACKWARD, args.delta_time.unwrap()))),
+        KeyBinding::new(Key::D, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::RIGHT, args.delta_time.unwrap()))),
+        KeyBinding::new(Key::Space, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::UP, args.delta_time.unwrap()))),
+        KeyBinding::new(Key::LeftShift, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::DOWN, args.delta_time.unwrap()))),
+        KeyBinding::new(Key::RightShift, false, Box::new(|args| toggle_cursor_mode(args))),
     ];
+
     let vertices: Vec<f32> = vec![
          0.5,  0.5, 0.0,    // 0 front top right
          0.5, -0.5, 0.0,    // 1 front bottom right
@@ -103,21 +122,11 @@ fn main() {
     ];
 
 
-    //let vertices: Vec<f32> = vec![
-    //     0.5,  0.5, 0.0,  // top right
-    //     0.5, -0.5, 0.0,  // bottom right
-    //    -0.5, -0.5, 0.0,  // bottom left
-    //    -0.5,  0.5, 0.0   // top left
-    //];
-
-    //let indices = [
-    //    0, 1, 3,
-    //    1, 2, 3
-    //];
-
     let mut vbo: GLuint = 0;
     let mut vao: GLuint = 0;
     let mut ebo: GLuint = 0;
+    let mut texture: GLuint = 0;
+
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
         gl::GenBuffers(1,  &mut vbo);
@@ -160,14 +169,45 @@ fn main() {
     }
     let shader_program = Shader::new("triangle.vert", "triangle.frag");
 
-    let mut last_time = glfw.get_time();
-    let mut input_controller = InputController::init(None, None);
-    let mut game_controller = GameController::init();
-    let target_fps: f64 = game_controller.frames_per_second;
+    unsafe {
+        gl::GenTextures(1, &mut texture);
+    }
+
+    unsafe  {
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+    }
+
+    unsafe {
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+    }
+
+    unsafe {
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RGB as i32,
+            img.width() as i32,
+            img.height() as i32,
+            0,
+            gl::RGB,
+            gl::UNSIGNED_BYTE,
+            &data[0] as *const u8 as *const std::ffi::c_void
+        );
+        gl::GenerateMipmap(gl::TEXTURE_2D)
+    }
+
 
     unsafe {
         gl::BindVertexArray(vao);
     }
+
+    let mut last_time = glfw.get_time();
+    let mut game_controller = GameController::init();
+    let target_fps: f64 = game_controller.frames_per_second;
 
     while !window.should_close() {
 
@@ -177,7 +217,7 @@ fn main() {
 
         process_events(&events, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
 
-        process_input(&mut window, &delta_time, &mut input_controller, &mut camera);
+        process_input(&mut window, &delta_time, &mut keybindings, &mut camera, &glfw);
         
         game_controller.run_loop();
 
@@ -244,7 +284,6 @@ fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut
 
                 *last_x = xpos;
                 *last_y = ypos;
-
                 camera.process_mouse_input(x_offset, y_offset, true)
             },
             glfw::WindowEvent::Scroll(_x_offset, y_offset) => {
@@ -255,25 +294,8 @@ fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut
     }
 }
 
-fn process_input(window: &mut Window, delta_time: &f32, input_controller: &mut InputController, camera: &mut Camera) {
-    for (key, func) in &input_controller.keybinds {
-        match window.get_key(*key) {
-            Action::Press if input_controller.input_state.get(&key) == Some(&Action::Release).or(Some(&Action::Press)) => {
-                func.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera).input_state(&input_controller.input_state));
-                input_controller.input_state.insert(*key, Action::Press);
-            },
-            Action::Release if input_controller.input_state.get(&key) == Some(&Action::Press) => {
-                input_controller.input_state.insert(*key, Action::Release);
-            }
-            _ => ()
-        }
+fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut Vec<KeyBinding<Box<dyn Fn(InputFunctionArguments)>>>, camera: &mut Camera, glfw: &Glfw) {
+    for binding in bindings.iter_mut() {
+        binding.update(binding.key, window.get_key(binding.key), InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time)._glfw(glfw))
     }
-
-    for (button, func) in &input_controller.mouse_keybinds {
-        match window.get_mouse_button(*button) {
-            Action::Press => func.0(InputFunctionArguments::new().window(window).delta_time(delta_time).camera(camera)),
-            _ => ()
-        }
-    }
-
 }

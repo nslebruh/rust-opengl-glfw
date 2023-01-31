@@ -35,11 +35,9 @@ pub struct InputFunctionArguments<'a> {
     pub window: Option<&'a mut Window>,
     pub camera: Option<&'a mut Camera>,
     pub delta_time: Option<&'a f32>,
-    pub input_state: Option<&'a HashMap<Key, Action>>,
     pub key: Option<&'a Key>,
     pub action: Option<&'a Action>,
     pub _glfw: Option<&'a glfw::Glfw>,
-    pub input_controller: Option<&'a mut InputController>
 }
 
 impl<'a> InputFunctionArguments<'a> {
@@ -48,11 +46,9 @@ impl<'a> InputFunctionArguments<'a> {
             window: None,
             camera: None,
             delta_time: None,
-            input_state: None,
             key: None,
             action: None,
             _glfw: None,
-            input_controller: None
         }
     }
 
@@ -73,13 +69,6 @@ impl<'a> InputFunctionArguments<'a> {
     pub fn delta_time(self, delta_time: &'a f32) -> Self {
         Self {
             delta_time: Some(delta_time),
-            ..self
-        }
-    }
-
-    pub fn input_state(self, input_state: &'a HashMap<Key, Action>) -> Self {
-        Self {
-            input_state: Some(input_state),
             ..self
         }
     }
@@ -105,12 +94,6 @@ impl<'a> InputFunctionArguments<'a> {
         }
     }
 
-    pub fn input_controller(self, input_controller: &'a mut InputController) -> Self {
-        Self {
-            input_controller: Some(input_controller),
-            ..self
-        }
-    }
 }
 
 
