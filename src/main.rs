@@ -10,15 +10,15 @@ extern crate gl;
 extern crate lazy_static;
 extern crate image;
 
-use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void, collections::{HashMap, HashSet}};
+use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
 use camera::{Camera, CameraMovement};
-use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3, MetricSpace};
+use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
 use game_controller::GameController;
 use input_controller::InputFunctionArguments;
 use kdtree::{KdTree, distance::squared_euclidean};
 use util::{*, shader::Shader};
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
-use glfw::{Context, Window, Key, Glfw};
+use glfw::{Context, Window, Key};
 use keybinds::KeyBinding;
 
 fn main() {
@@ -192,7 +192,7 @@ fn main() {
     //    6, 5, 1     // bottom face
     //];
 
-    let cube_positions: Vec<Vector3<f32>> = create_chunk(3);
+    let cube_positions: Vec<Vector3<f32>> = create_chunk(16);
     //let cube_positions: Vec<Vector3<f32>> = vec![
     //    vec3(0.0, 0.0, -5.0),
     //    vec3(2.0, 5.0, -15.0),
@@ -205,10 +205,7 @@ fn main() {
     //    vec3(1.5, 0.2, -1.5),
     //    vec3(-1.3, 1.0, -1.5)
     //];
-    let _cubes_to_render = has_six_adjacent_vector3s3(&cube_positions);
-    for cubes in _cubes_to_render {
-        println!("{}", cubes)
-    }
+    let cubes_to_render = has_six_adjacent_vector3s3(&cube_positions);
 
 
     let mut vbo: GLuint = 0;
@@ -304,9 +301,7 @@ fn main() {
         gl::BindVertexArray(vao);
     }
 
-    let mut last_time = glfw.get_time();
     let mut game_controller = GameController::init();
-    let target_fps: f64 = game_controller.frames_per_second;
 
     while !window.should_close() {
 
@@ -316,17 +311,16 @@ fn main() {
 
         process_events(&events, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
 
-        process_input(&mut window, &delta_time, &mut keybindings, &mut camera, &glfw);
-        
+        process_input(&mut window, &delta_time, &mut keybindings, &mut camera);
+
         game_controller.run_loop(InputFunctionArguments::new().camera(&mut camera).cube_positions(&cube_positions));
 
         unsafe {
             gl_clear_color(255, 119, 110, 255);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
-        
-        let (width, height) = window.get_framebuffer_size();
 
+        let (width, height) = window.get_framebuffer_size();
 
         let model: Matrix4<f32> = Matrix4::from_axis_angle(
             vec3(0.5, 1.0, 0.0).normalize(),
@@ -346,8 +340,9 @@ fn main() {
             gl::BindTexture(gl::TEXTURE_2D, texture);
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
 
-            for (_i, position) in cube_positions.iter().enumerate() {
-                let  model: Matrix4<f32> = Matrix4::from_translation(*position);
+            for (i, position) in cube_positions.iter().enumerate() {
+                if cubes_to_render[i] {
+                    let  model: Matrix4<f32> = Matrix4::from_translation(*position);
                 //let mut model: Matrix4<f32> = Matrix4::from_translation(*position);
                 //let angle = 20.0 * i as f32;
                 //model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));
@@ -355,11 +350,9 @@ fn main() {
                 shader_program.set_mat4("model", &model);
                 //gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
                 gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
+                }
             }
         }
-
-        //while glfw.get_time() < last_time + 1.0 / target_fps {}
-        //last_time += 1.0 / target_fps;
 
         window.swap_buffers();
         glfw.poll_events();
@@ -395,9 +388,9 @@ fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut
     }
 }
 
-fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut Vec<KeyBinding<Box<dyn Fn(InputFunctionArguments)>>>, camera: &mut Camera, glfw: &Glfw) {
+fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut Vec<KeyBinding<Box<dyn Fn(InputFunctionArguments)>>>, camera: &mut Camera) {
     for binding in bindings.iter_mut() {
-        binding.update(binding.key, window.get_key(binding.key), InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time)._glfw(glfw))
+        binding.update(binding.key, window.get_key(binding.key), InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time))
     }
 }
 
@@ -412,100 +405,30 @@ fn create_chunk(num: i32) -> Vec<Vector3<f32>> {
     }
     output
 }
-/// takes in a vector of cube positions
-/// 
-/// iterates through cubes and tests if the cube is adjacent to any other cubes
-/// 
-/// if cube is adjacent to 6 other cubes, set the cube's value in a hashmap to false, else true
-fn calculate_visible_cubes(cubes: &Vec<Vector3<f32>>) -> () /*Vec<bool>*/ {
-    let mut hashed_values: HashMap<usize, u8> = HashMap::new();
-    let mut output: Vec<bool> = vec![];
-    
-    for i in 0..=cubes.len() {
-        for j in 1..=cubes.len() {
-            if cubes[i].distance2(cubes[j]).partial_cmp(&1.0) == Some(std::cmp::Ordering::Equal) {
-                println!("true")
-            } 
-        }
-
-    }
-    //output
-}
-fn has_six_adjacent_vector3s(vectors: &[Vector3<f32>]) -> Vec<bool> {
-    let mut result = vec![false; vectors.len()];
-
-    for i in 0..vectors.len() {
-        let mut count = 0;
-
-        for j in 0..vectors.len() {
-            if i == j {
-                continue;
-            }
-
-            let distance = (vectors[i] - vectors[j]).magnitude();
-            if distance <= 1.0 {
-                count += 1;
-            }
-        }
-
-        if count >= 6 {
-            result[i] = true;
-        }
-    }
-
-    result
-}
-
-fn has_six_adjacent_vector3s2(vectors: &[Vector3<f32>]) -> Vec<bool> {
-    println!("{:?}", vectors);
-    let mut result = vec![false; vectors.len()];
-    let mut distances = HashMap::new();
-
-    for i in 0..vectors.len() {
-        let mut count = 0;
-
-        for j in i+1..vectors.len() {
-            let distance = match distances.get(&(i, j)) {
-                Some(d) => *d,
-                None => {
-                    let d = (vectors[i] - vectors[j]).magnitude();
-                    distances.insert((i, j), d);
-                    d
-                }
-            };
-
-            if distance <= 1.0 {
-                count += 1;
-            }
-        }
-
-        if count >= 6 {
-            result[i] = true;
-        }
-    }
-
-    result
-}
 
 fn has_six_adjacent_vector3s3(vectors: &[Vector3<f32>]) -> Vec<bool> {
     let mut tree = KdTree::new(3);
-    let points: Vec<([f32; 3], usize)> = vectors.iter().enumerate().map(|v| ([v.1.x, v.1.y, v.1.z], v.0)).collect();
-    for point in &points {
-        tree.add(point.0, point.1).unwrap();
-    }
-    
+    let points: Vec<([f32; 3], usize)> = vectors
+        .iter()
+        .enumerate()
+        .map(
+            |v|
+            {
+                tree.add([v.1.x, v.1.y, v.1.z], v.0).unwrap();
+                ([v.1.x, v.1.y, v.1.z], v.0)
+            }
+        ).collect();
+
     let mut result = vec![false; vectors.len()];
 
     for (v, i) in points {
-        let nearest_neighbors = tree.within(&v, 1.0, &squared_euclidean).unwrap();
-        if nearest_neighbors.len() >= 6 {
+        if (tree.within(&v, 1.0, &squared_euclidean).unwrap().len() - 1) < 6 {
             result[i] = true;
         }
     }
 
     result
 }
-//This optimization results in a significant improvement in performance, especially for large inputs.
 
 //use i32 for position data
 
