@@ -507,6 +507,6 @@ fn has_six_adjacent_vector3s3(vectors: &[Vector3<f32>]) -> Vec<bool> {
 }
 //This optimization results in a significant improvement in performance, especially for large inputs.
 
-
+//use i32 for position data
 
 
