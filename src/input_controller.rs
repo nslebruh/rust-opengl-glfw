@@ -3,6 +3,7 @@ extern crate glfw;
 
 use std::{collections::HashMap, ops::DerefMut};
 
+use cgmath::Vector3;
 use glfw::{Key, MouseButton, Window, Action};
 use std::ops::Deref;
 
@@ -38,6 +39,7 @@ pub struct InputFunctionArguments<'a> {
     pub key: Option<&'a Key>,
     pub action: Option<&'a Action>,
     pub _glfw: Option<&'a glfw::Glfw>,
+    pub cube_positions: Option<&'a Vec<Vector3<f32>>>
 }
 
 impl<'a> InputFunctionArguments<'a> {
@@ -49,6 +51,7 @@ impl<'a> InputFunctionArguments<'a> {
             key: None,
             action: None,
             _glfw: None,
+            cube_positions: None
         }
     }
 
@@ -90,6 +93,13 @@ impl<'a> InputFunctionArguments<'a> {
     pub fn _glfw(self, _glfw: &'a glfw::Glfw) -> Self {
         Self {
             _glfw: Some(_glfw),
+            ..self
+        }
+    }
+
+    pub fn cube_positions(self, cube_positions: &'a Vec<Vector3<f32>>) -> Self {
+        Self {
+            cube_positions: Some(cube_positions),
             ..self
         }
     }

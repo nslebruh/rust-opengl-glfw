@@ -10,11 +10,10 @@ extern crate gl;
 extern crate lazy_static;
 extern crate image;
 
-use std::{mem::{size_of_val, size_of}, sync::mpsc::Receiver, path::Path, ffi::c_void};
+use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
 use camera::{Camera, CameraMovement};
 use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
 use game_controller::GameController;
-use image::GenericImage;
 use input_controller::InputFunctionArguments;
 use input_functions::toggle_cursor_mode;
 use util::{*, shader::Shader};
@@ -28,8 +27,8 @@ const SCR_HEIGHT: u32 = 720;
 
 fn main() {
 
-    let img = image::open(&Path::new("container.jpg")).unwrap();
-    let data = img.raw_pixels();
+    let img = image::open(&Path::new("images.png")).unwrap().to_rgba();
+    let data = img.to_vec();
 
     let mut camera = Camera {
         position: Point3::new(0.0, 0.0, 3.0),
@@ -59,6 +58,8 @@ fn main() {
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
+        //gl::Enable(gl::CULL_FACE);
+
     }
 
 
@@ -77,60 +78,149 @@ fn main() {
         KeyBinding::new(Key::D, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::RIGHT, args.delta_time.unwrap()))),
         KeyBinding::new(Key::Space, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::UP, args.delta_time.unwrap()))),
         KeyBinding::new(Key::LeftShift, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::DOWN, args.delta_time.unwrap()))),
-        KeyBinding::new(Key::RightShift, false, Box::new(|args| toggle_cursor_mode(args))),
+        KeyBinding::new(Key::RightShift, false, Box::new(|args| args.window.unwrap().set_cursor_mode(glfw::CursorMode::Normal))),
+        KeyBinding::new(Key::Enter, false, Box::new(|args| args.window.unwrap().set_cursor_mode(glfw::CursorMode::Disabled))),
+        KeyBinding::new(Key::LeftControl, false, Box::new(|args| args.camera.unwrap().print_position()))
     ];
+    //let vertices: Vec<f32> = vec![
+    //    -0.5, -0.5, -0.5,  0.0, 0.0,
+    //     0.5, -0.5, -0.5,  1.0, 0.0,
+    //     0.5,  0.5, -0.5,  1.0, 1.0,
+    //     0.5,  0.5, -0.5,  1.0, 1.0,
+    //    -0.5,  0.5, -0.5,  0.0, 1.0,
+    //    -0.5, -0.5, -0.5,  0.0, 0.0,
+//
+    //    -0.5, -0.5,  0.5,  0.0, 0.0,
+    //     0.5, -0.5,  0.5,  1.0, 0.0,
+    //     0.5,  0.5,  0.5,  1.0, 1.0,
+    //     0.5,  0.5,  0.5,  1.0, 1.0,
+    //    -0.5,  0.5,  0.5,  0.0, 1.0,
+    //    -0.5, -0.5,  0.5,  0.0, 0.0,
+//
+    //    -0.5,  0.5,  0.5,  1.0, 0.0,
+    //    -0.5,  0.5, -0.5,  1.0, 1.0,
+    //    -0.5, -0.5, -0.5,  0.0, 1.0,
+    //    -0.5, -0.5, -0.5,  0.0, 1.0,
+    //    -0.5, -0.5,  0.5,  0.0, 0.0,
+    //    -0.5,  0.5,  0.5,  1.0, 0.0,
+//
+    //     0.5,  0.5,  0.5,  1.0, 0.0,
+    //     0.5,  0.5, -0.5,  1.0, 1.0,
+    //     0.5, -0.5, -0.5,  0.0, 1.0,
+    //     0.5, -0.5, -0.5,  0.0, 1.0,
+    //     0.5, -0.5,  0.5,  0.0, 0.0,
+    //     0.5,  0.5,  0.5,  1.0, 0.0,
+//
+    //    -0.5, -0.5, -0.5,  0.0, 1.0,
+    //     0.5, -0.5, -0.5,  1.0, 1.0,
+    //     0.5, -0.5,  0.5,  1.0, 0.0,
+    //     0.5, -0.5,  0.5,  1.0, 0.0,
+    //    -0.5, -0.5,  0.5,  0.0, 0.0,
+    //    -0.5, -0.5, -0.5,  0.0, 1.0,
+//
+    //    -0.5,  0.5, -0.5,  0.0, 1.0,
+    //     0.5,  0.5, -0.5,  1.0, 1.0,
+    //     0.5,  0.5,  0.5,  1.0, 0.0,
+    //     0.5,  0.5,  0.5,  1.0, 0.0,
+    //    -0.5,  0.5,  0.5,  0.0, 0.0,
+    //    -0.5,  0.5, -0.5,  0.0, 1.0
+//   ];
+   let vertices: Vec<f32> = vec![
+        0.0, 0.0, 0.0,  0.0, 0.0,
+         1.0, 0.0, 0.0,  1.0, 0.0,
+         1.0,  1.0, 0.0,  1.0, 1.0,
+         1.0,  1.0, 0.0,  1.0, 1.0,
+        0.0,  1.0, 0.0,  0.0, 1.0,
+        0.0, 0.0, 0.0,  0.0, 0.0,
 
-    let vertices: Vec<f32> = vec![
-         0.5,  0.5, 0.0, 1.0, 1.0,   // 0 front top right
-         0.5, -0.5, 0.0, 1.0, 0.0,   // 1 front bottom right
-        -0.5, -0.5, 0.0, 0.0, 0.0,   // 2 front bottom left
-        -0.5,  0.5, 0.0, 0.0, 1.0,   // 3 front top left
-         0.5,  0.5, 0.5, 1.0, 1.0,   // 4 back top right
-         0.5, -0.5, 0.5, 1.0, 0.0,   // 5 back bottom right
-        -0.5, -0.5, 0.5, 0.0, 0.0,   // 6 back bottom left
-        -0.5,  0.5, 0.5, 0.0, 1.0    // 7 back top left
+        0.0, 0.0,  1.0,  0.0, 0.0,
+         1.0, 0.0,  1.0,  1.0, 0.0,
+         1.0,  1.0,  1.0,  1.0, 1.0,
+         1.0,  1.0,  1.0,  1.0, 1.0,
+        0.0,  1.0,  1.0,  0.0, 1.0,
+        0.0, 0.0,  1.0,  0.0, 0.0,
 
-    ];
+        0.0,  1.0,  1.0,  1.0, 0.0,
+        0.0,  1.0, 0.0,  1.0, 1.0,
+        0.0, 0.0, 0.0,  0.0, 1.0,
+        0.0, 0.0, 0.0,  0.0, 1.0,
+        0.0, 0.0,  1.0,  0.0, 0.0,
+        0.0,  1.0,  1.0,  1.0, 0.0,
 
-    let indices = [
-        0, 1, 3,    //
-        1, 2, 3,    // bottom face
-        4, 5, 0,    //
-        5, 1, 0,    // left face
-        7, 6, 4,    //
-        6, 5, 4,    // top face
-        7, 6, 3,    //
-        6, 2, 3,    // right face
-        4, 0, 7,    //
-        0, 3, 7,    // top face
-        2, 6, 1,    //
-        6, 5, 1     // bottom face
+         1.0,  1.0,  1.0,  1.0, 0.0,
+         1.0,  1.0, 0.0,  1.0, 1.0,
+         1.0, 0.0, 0.0,  0.0, 1.0,
+         1.0, 0.0, 0.0,  0.0, 1.0,
+         1.0, 0.0,  1.0,  0.0, 0.0,
+         1.0,  1.0,  1.0,  1.0, 0.0,
 
-    ];
+        0.0, 0.0, 0.0,  0.0, 1.0,
+         1.0, 0.0, 0.0,  1.0, 1.0,
+         1.0, 0.0,  1.0,  1.0, 0.0,
+         1.0, 0.0,  1.0,  1.0, 0.0,
+        0.0, 0.0,  1.0,  0.0, 0.0,
+        0.0, 0.0, 0.0,  0.0, 1.0,
 
-    let cube_positions: Vec<Vector3<f32>> = vec![
-        vec3(0.0, 0.0, -5.0),
-        vec3(2.0, 5.0, -15.0),
-        vec3(-1.5, -2.2, -2.5),
-        vec3(-3.8, -2.0, -12.3),
-        vec3(2.4, -0.4, -3.5),
-        vec3(-1.7, 3.0, -7.5),
-        vec3(1.3, -2.0, -2.5),
-        vec3(1.5, 2.0, -2.5),
-        vec3(1.5, 0.2, -1.5),
-        vec3(-1.3, 1.0, -1.5)
-    ];
+        0.0,  1.0, 0.0,  0.0, 1.0,
+         1.0,  1.0, 0.0,  1.0, 1.0,
+         1.0,  1.0,  1.0,  1.0, 0.0,
+         1.0,  1.0,  1.0,  1.0, 0.0,
+        0.0,  1.0,  1.0,  0.0, 0.0,
+        0.0,  1.0, 0.0,  0.0, 1.0
+   ];
+
+    //let vertices: Vec<f32> = vec![
+    //     0.5,  0.5, 0.0, 1.0, 1.0,   // 0 front top right
+    //     0.5, -0.5, 0.0, 1.0, 0.0,   // 1 front bottom right
+    //    -0.5, -0.5, 0.0, 0.0, 0.0,   // 2 front bottom left
+    //    -0.5,  0.5, 0.0, 0.0, 1.0,   // 3 front top left
+    //     0.5,  0.5, 1.0, 1.0, 1.0,   // 4 back top right
+    //     0.5, -0.5, 1.0, 1.0, 0.0,   // 5 back bottom right
+    //    -0.5, -0.5, 1.0, 0.0, 0.0,   // 6 back bottom left
+    //    -0.5,  0.5, 1.0, 0.0, 1.0    // 7 back top left
+    //];
+    //let indices = [
+    //    0, 1, 3,    //
+    //    1, 2, 3,    // bottom face
+    //    4, 5, 0,    //
+    //    5, 1, 0,    // left face
+    //    7, 6, 4,    //
+    //    6, 5, 4,    // top face
+    //    7, 6, 3,    //
+    //    6, 2, 3,    // right face
+    //    4, 0, 7,    //
+    //    0, 3, 7,    // top face
+    //    2, 6, 1,    //
+    //    6, 5, 1     // bottom face
+    //];
+
+    //let cube_positions: Vec<Vector3<f32>> = vec![
+    //    vec3(1.0, 1.0, 1.0)
+    //];
+    let cube_positions: Vec<Vector3<f32>> = create_16x16_chunk();
+    //let cube_positions: Vec<Vector3<f32>> = vec![
+    //    vec3(0.0, 0.0, -5.0),
+    //    vec3(2.0, 5.0, -15.0),
+    //    vec3(-1.5, -2.2, -2.5),
+    //    vec3(-3.8, -2.0, -12.3),
+    //    vec3(2.4, -0.4, -3.5),
+    //    vec3(-1.7, 3.0, -7.5),
+    //    vec3(1.3, -2.0, -2.5),
+    //    vec3(1.5, 2.0, -2.5),
+    //    vec3(1.5, 0.2, -1.5),
+    //    vec3(-1.3, 1.0, -1.5)
+    //];
 
 
     let mut vbo: GLuint = 0;
     let mut vao: GLuint = 0;
-    let mut ebo: GLuint = 0;
+    //let mut ebo: GLuint = 0;
     let mut texture: GLuint = 0;
 
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
         gl::GenBuffers(1,  &mut vbo);
-        gl::GenBuffers(1,  &mut ebo);
+        //gl::GenBuffers(1,  &mut ebo);
         gl::BindVertexArray(vao);
     }
 
@@ -144,15 +234,15 @@ fn main() {
         );
     }
 
-    unsafe {
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-        gl::BufferData(
-            gl::ELEMENT_ARRAY_BUFFER,
-            size_of_val(&indices) as GLsizeiptr,
-            indices.as_ptr().cast(),
-            gl::STATIC_DRAW
-        )
-    }
+    //unsafe {
+    //    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+    //    gl::BufferData(
+    //        gl::ELEMENT_ARRAY_BUFFER,
+    //        size_of_val(&indices) as GLsizeiptr,
+    //        indices.as_ptr().cast(),
+    //        gl::STATIC_DRAW
+    //    )
+    //}
     unsafe {
         gl::EnableVertexAttribArray(0);
         gl::VertexAttribPointer(
@@ -171,7 +261,7 @@ fn main() {
             gl::FLOAT,
             gl::FALSE,
             (5 * size_of::<f32>()).try_into().unwrap(),
-            (2 * size_of::<f32>()) as *const c_void
+            (3 * size_of::<f32>()) as *const c_void
         );
 
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -199,11 +289,11 @@ fn main() {
         gl::TexImage2D(
             gl::TEXTURE_2D,
             0,
-            gl::RGB as i32,
+            gl::RGBA as i32,
             img.width() as i32,
             img.height() as i32,
             0,
-            gl::RGB,
+            gl::RGBA,
             gl::UNSIGNED_BYTE,
             &data[0] as *const u8 as *const std::ffi::c_void
         );
@@ -229,7 +319,7 @@ fn main() {
 
         process_input(&mut window, &delta_time, &mut keybindings, &mut camera, &glfw);
         
-        game_controller.run_loop();
+        game_controller.run_loop(InputFunctionArguments::new().camera(&mut camera).cube_positions(&cube_positions));
 
         unsafe {
             gl_clear_color(255, 119, 110, 255);
@@ -257,18 +347,20 @@ fn main() {
             gl::BindTexture(gl::TEXTURE_2D, texture);
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
 
-            for (i, position) in cube_positions.iter().enumerate() {
-                let mut model: Matrix4<f32> = Matrix4::from_translation(*position);
-                let angle = 20.0 * i as f32;
-                model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));
+            for (_i, position) in cube_positions.iter().enumerate() {
+                let  model: Matrix4<f32> = Matrix4::from_translation(*position);
+                //let mut model: Matrix4<f32> = Matrix4::from_translation(*position);
+                //let angle = 20.0 * i as f32;
+                //model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));
 
                 shader_program.set_mat4("model", &model);
-                gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
+                //gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
+                gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
             }
         }
 
-        while glfw.get_time() < last_time + 1.0 / target_fps {}
-        last_time += 1.0 / target_fps;
+        //while glfw.get_time() < last_time + 1.0 / target_fps {}
+        //last_time += 1.0 / target_fps;
 
         window.swap_buffers();
         glfw.poll_events();
@@ -308,4 +400,16 @@ fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut Vec<KeyBi
     for binding in bindings.iter_mut() {
         binding.update(binding.key, window.get_key(binding.key), InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time)._glfw(glfw))
     }
+}
+
+fn create_16x16_chunk() -> Vec<Vector3<f32>> {
+    let mut output: Vec<Vector3<f32>> = vec![];
+    for x in 1..=16 {
+        for y in 1..=16 {
+            for z in 1..=16 {
+                output.push(vec3(x as f32, y as f32, z as f32))
+            }
+        }
+    }
+    output
 }

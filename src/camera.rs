@@ -39,7 +39,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         let mut camera = Self {
-            position: Point3::new(0.0, 0.0, 0.0),
+            position: Point3::new(1.0, 1.0, 1.0),
             front: vec3(0.0, 0.0, -1.0),
             up: Vector3::zero(),
             right: Vector3::zero(),
@@ -128,5 +128,9 @@ impl Camera {
         // Also re-calculate the Right and Up vector
         self.right = self.front.cross(self.world_up).normalize(); // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         self.up = self.right.cross(self.front).normalize();
+    }
+
+    pub fn print_position(&self) {
+        println!("{:?}", self.position)
     }
 }
