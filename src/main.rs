@@ -10,22 +10,20 @@ extern crate gl;
 extern crate lazy_static;
 extern crate image;
 
-use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
+use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void, collections::{HashMap, HashSet}};
 use camera::{Camera, CameraMovement};
-use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
+use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3, MetricSpace};
 use game_controller::GameController;
 use input_controller::InputFunctionArguments;
-use input_functions::toggle_cursor_mode;
+use kdtree::{KdTree, distance::squared_euclidean};
 use util::{*, shader::Shader};
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use glfw::{Context, Window, Key, Glfw};
 use keybinds::KeyBinding;
 
-const SCR_WIDTH: u32 = 1280;
-const SCR_HEIGHT: u32 = 720;
-
-
 fn main() {
+    let scr_width: u32 = 1280;
+    let scr_height: u32 = 720;
 
     let img = image::open(&Path::new("images.png")).unwrap().to_rgba();
     let data = img.to_vec();
@@ -36,8 +34,8 @@ fn main() {
     };
 
     let mut first_mouse = true;
-    let mut last_x: f32 = SCR_WIDTH as f32 / 2.0;
-    let mut last_y: f32 = SCR_HEIGHT as f32 / 2.0;
+    let mut last_x: f32 = scr_width as f32 / 2.0;
+    let mut last_y: f32 = scr_height as f32 / 2.0;
 
     let mut delta_time: f32;
     let mut last_frame: f32 = 0.0;
@@ -50,7 +48,7 @@ fn main() {
     #[cfg(target_os = "macos")]
     glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
 
-    let (mut window, events) = glfw.create_window(SCR_WIDTH, SCR_HEIGHT, "Hello this is window", glfw::WindowMode::Windowed)
+    let (mut window, events) = glfw.create_window(scr_width, scr_height, "Hello this is window", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 
 
@@ -194,10 +192,7 @@ fn main() {
     //    6, 5, 1     // bottom face
     //];
 
-    //let cube_positions: Vec<Vector3<f32>> = vec![
-    //    vec3(1.0, 1.0, 1.0)
-    //];
-    let cube_positions: Vec<Vector3<f32>> = create_16x16_chunk();
+    let cube_positions: Vec<Vector3<f32>> = create_chunk(3);
     //let cube_positions: Vec<Vector3<f32>> = vec![
     //    vec3(0.0, 0.0, -5.0),
     //    vec3(2.0, 5.0, -15.0),
@@ -210,6 +205,10 @@ fn main() {
     //    vec3(1.5, 0.2, -1.5),
     //    vec3(-1.3, 1.0, -1.5)
     //];
+    let _cubes_to_render = has_six_adjacent_vector3s3(&cube_positions);
+    for cubes in _cubes_to_render {
+        println!("{}", cubes)
+    }
 
 
     let mut vbo: GLuint = 0;
@@ -402,14 +401,112 @@ fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut Vec<KeyBi
     }
 }
 
-fn create_16x16_chunk() -> Vec<Vector3<f32>> {
+fn create_chunk(num: i32) -> Vec<Vector3<f32>> {
     let mut output: Vec<Vector3<f32>> = vec![];
-    for x in 1..=16 {
-        for y in 1..=16 {
-            for z in 1..=16 {
+    for x in 0..=num-1 {
+        for y in 0..=num-1 {
+            for z in 0..=num-1 {
                 output.push(vec3(x as f32, y as f32, z as f32))
             }
         }
     }
     output
 }
+/// takes in a vector of cube positions
+/// 
+/// iterates through cubes and tests if the cube is adjacent to any other cubes
+/// 
+/// if cube is adjacent to 6 other cubes, set the cube's value in a hashmap to false, else true
+fn calculate_visible_cubes(cubes: &Vec<Vector3<f32>>) -> () /*Vec<bool>*/ {
+    let mut hashed_values: HashMap<usize, u8> = HashMap::new();
+    let mut output: Vec<bool> = vec![];
+    
+    for i in 0..=cubes.len() {
+        for j in 1..=cubes.len() {
+            if cubes[i].distance2(cubes[j]).partial_cmp(&1.0) == Some(std::cmp::Ordering::Equal) {
+                println!("true")
+            } 
+        }
+
+    }
+    //output
+}
+fn has_six_adjacent_vector3s(vectors: &[Vector3<f32>]) -> Vec<bool> {
+    let mut result = vec![false; vectors.len()];
+
+    for i in 0..vectors.len() {
+        let mut count = 0;
+
+        for j in 0..vectors.len() {
+            if i == j {
+                continue;
+            }
+
+            let distance = (vectors[i] - vectors[j]).magnitude();
+            if distance <= 1.0 {
+                count += 1;
+            }
+        }
+
+        if count >= 6 {
+            result[i] = true;
+        }
+    }
+
+    result
+}
+
+fn has_six_adjacent_vector3s2(vectors: &[Vector3<f32>]) -> Vec<bool> {
+    println!("{:?}", vectors);
+    let mut result = vec![false; vectors.len()];
+    let mut distances = HashMap::new();
+
+    for i in 0..vectors.len() {
+        let mut count = 0;
+
+        for j in i+1..vectors.len() {
+            let distance = match distances.get(&(i, j)) {
+                Some(d) => *d,
+                None => {
+                    let d = (vectors[i] - vectors[j]).magnitude();
+                    distances.insert((i, j), d);
+                    d
+                }
+            };
+
+            if distance <= 1.0 {
+                count += 1;
+            }
+        }
+
+        if count >= 6 {
+            result[i] = true;
+        }
+    }
+
+    result
+}
+
+fn has_six_adjacent_vector3s3(vectors: &[Vector3<f32>]) -> Vec<bool> {
+    let mut tree = KdTree::new(3);
+    let points: Vec<([f32; 3], usize)> = vectors.iter().enumerate().map(|v| ([v.1.x, v.1.y, v.1.z], v.0)).collect();
+    for point in &points {
+        tree.add(point.0, point.1).unwrap();
+    }
+    
+    let mut result = vec![false; vectors.len()];
+
+    for (v, i) in points {
+        let nearest_neighbors = tree.within(&v, 1.0, &squared_euclidean).unwrap();
+        if nearest_neighbors.len() >= 6 {
+            result[i] = true;
+        }
+    }
+
+    result
+}
+//This optimization results in a significant improvement in performance, especially for large inputs.
+
+
+
+
