@@ -16,9 +16,9 @@ use game_controller::GameController;
 use shader::Shader;
 use util::*;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
-use glfw::{Window, Key};
+use glfw::Key;
 
-use engine::{keybinds::{KeyBinding, InputFunctionArguments}, input_functions::*, camera::Camera, window::Window as OtherWindow};
+use engine::{keybinds::{KeyBinding, InputFunctionArguments}, input_functions::*, camera::Camera, window::Window};
 fn main() {
     let scr_width: u32 = 1280;
     let scr_height: u32 = 720;
@@ -38,7 +38,7 @@ fn main() {
     let mut delta_time: f32;
     let mut last_frame: f32 = 0.0;
 
-    let mut window: OtherWindow = OtherWindow::init(scr_width, scr_height, "test title", glfw::WindowMode::Windowed, vec![glfw::WindowHint::ContextVersion(3, 3), glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core)]).unwrap(); 
+    let mut window: Window = Window::init(scr_width, scr_height, "test title", glfw::WindowMode::Windowed, vec![glfw::WindowHint::ContextVersion(3, 3), glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core)]).unwrap(); 
 
     //let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
@@ -308,7 +308,7 @@ fn main() {
 
         process_events(&window.reciever, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
 
-        process_input(&mut window.window, &delta_time, &mut keybindings, &mut camera);
+        process_input(&mut window, &delta_time, &mut keybindings, &mut camera);
 
         game_controller.run_loop(InputFunctionArguments::new().camera(&mut camera).cube_positions(&cube_positions));
 

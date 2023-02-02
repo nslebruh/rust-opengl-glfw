@@ -67,4 +67,12 @@ impl Window {
 
     }
 
+    pub fn get_key(&mut self, key: glfw::Key) -> glfw::Action {
+        self.window.get_key(key)
+    }
+
+    pub fn set_cursor_mode(&mut self, mode: glfw::CursorMode) {
+        self.window.set_cursor_mode(mode)
+    }
+
 }

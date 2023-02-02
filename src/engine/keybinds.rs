@@ -1,5 +1,6 @@
 use cgmath::Vector3;
-use glfw::{Key, Action, Window};
+use glfw::{Key, Action};
+use super::window::Window;
 
 use super::camera::Camera;
 
