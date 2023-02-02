@@ -46,9 +46,6 @@ pub struct InputFunctionArguments<'a> {
     pub window: Option<&'a mut Window>,
     pub camera: Option<&'a mut Camera>,
     pub delta_time: Option<&'a f32>,
-    pub key: Option<&'a Key>,
-    pub action: Option<&'a Action>,
-    pub _glfw: Option<&'a glfw::Glfw>,
     pub cube_positions: Option<&'a Vec<Vector3<f32>>>
 }
 
@@ -58,9 +55,6 @@ impl<'a> InputFunctionArguments<'a> {
             window: None,
             camera: None,
             delta_time: None,
-            key: None,
-            action: None,
-            _glfw: None,
             cube_positions: None
         }
     }
