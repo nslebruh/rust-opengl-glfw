@@ -1,8 +1,4 @@
-//?https://nercury.github.io/rust/opengl/tutorial/2018/02/10/opengl-in-rust-from-scratch-03-compiling-shaders.html
-
 extern crate gl;
-
-pub mod shader;
 
 use std::ffi::CString;
 
@@ -64,15 +60,11 @@ pub unsafe fn gl_clear_color(r: u8, g: u8, b: u8, a: u8) {
     ).apply(rgba_from_u8(r, g, b, a).unwrap());
 }
 
-fn create_whitespace_cstring_with_len(len: usize) -> CString {
+pub(crate) fn create_whitespace_cstring_with_len(len: usize) -> CString {
     // allocate buffer of correct size
     let mut buffer: Vec<u8> = Vec::with_capacity(len + 1);
     // fill it with len spaces
     buffer.extend([b' '].iter().cycle().take(len));
     // convert buffer to CString
     unsafe { CString::from_vec_unchecked(buffer) }
-}
-
-pub fn _create_square_indices(top_right: u32, top_left: u32, bottom_right: u32, bottom_left: u32) -> Vec<u32> {
-    vec![top_right, bottom_right, top_left, bottom_right, top_left, bottom_left]
 }

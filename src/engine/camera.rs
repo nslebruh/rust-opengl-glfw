@@ -4,14 +4,14 @@ type Vector3 = cgmath::Vector3<f32>;
 type Point3 = cgmath::Point3<f32>;
 
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub enum CameraMovement {
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN
+    Forward,
+    Backward,
+    Left,
+    Right,
+    Up,
+    Down
 }
 
 const YAW: f32 = -90.0;
@@ -64,22 +64,22 @@ impl Camera {
         let velocity = self.movement_speed * *delta_time;
 
         match direction {
-            CameraMovement::FORWARD => {
+            CameraMovement::Forward => {
                 self.position += self.front * velocity;
             },
-            CameraMovement::BACKWARD => {
+            CameraMovement::Backward => {
                 self.position += -(self.front * velocity);
             },
-            CameraMovement::LEFT => {
+            CameraMovement::Left => {
                 self.position += -(self.right * velocity);
             },
-            CameraMovement::RIGHT => {
+            CameraMovement::Right => {
                 self.position += self.right * velocity;
             },
-            CameraMovement::UP => {
+            CameraMovement::Up => {
                 self.position += self.up * velocity;
             },
-            CameraMovement::DOWN => {
+            CameraMovement::Down => {
                 self.position += -(self.up * velocity);
             },
         }
@@ -128,9 +128,5 @@ impl Camera {
         // Also re-calculate the Right and Up vector
         self.right = self.front.cross(self.world_up).normalize(); // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         self.up = self.right.cross(self.front).normalize();
-    }
-
-    pub fn print_position(&self) {
-        println!("{:?}", self.position)
     }
 }

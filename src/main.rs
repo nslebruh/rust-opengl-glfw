@@ -1,26 +1,24 @@
-mod util;
-mod input_controller;
 mod game_controller;
-mod input_functions;
-mod camera;
-mod keybinds;
+mod shader;
+mod util;
+mod engine;
 
 extern crate glfw;
 extern crate gl;
 extern crate lazy_static;
 extern crate image;
 
+use crate::engine::generation::*;
 use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
-use camera::{Camera, CameraMovement};
 use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
 use game_controller::GameController;
-use input_controller::InputFunctionArguments;
-use kdtree::{KdTree, distance::squared_euclidean};
-use util::{*, shader::Shader};
-use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
-use glfw::{Context, Window, Key};
-use keybinds::KeyBinding;
 
+use shader::Shader;
+use util::*;
+use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
+use glfw::{Window, Key};
+
+use engine::{keybinds::{KeyBinding, InputFunctionArguments}, input_functions::*, camera::Camera, window::Window as OtherWindow};
 fn main() {
     let scr_width: u32 = 1280;
     let scr_height: u32 = 720;
@@ -40,19 +38,19 @@ fn main() {
     let mut delta_time: f32;
     let mut last_frame: f32 = 0.0;
 
+    let mut window: OtherWindow = OtherWindow::init(scr_width, scr_height, "test title", glfw::WindowMode::Windowed, vec![glfw::WindowHint::ContextVersion(3, 3), glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core)]).unwrap(); 
 
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    //let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
-    glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
-    glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
-    #[cfg(target_os = "macos")]
-    glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
+    //glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
+    //glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+    //#[cfg(target_os = "macos")]
+    //glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
+    //let (mut window, events) = glfw.create_window(scr_width, scr_height, "Hello this is window", glfw::WindowMode::Windowed)
+    //   .expect("Failed to create GLFW window.");
 
-    let (mut window, events) = glfw.create_window(scr_width, scr_height, "Hello this is window", glfw::WindowMode::Windowed)
-        .expect("Failed to create GLFW window.");
 
-
-    gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
+    gl::load_with(|ptr| window.window.get_proc_address(ptr) as *const _);
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
@@ -60,25 +58,24 @@ fn main() {
 
     }
 
-
     window.make_current();
-    window.set_cursor_pos_polling(true);
-    window.set_scroll_polling(true);
-    window.set_framebuffer_size_polling(true);
-    window.set_cursor_mode(glfw::CursorMode::Disabled);
+    window.window.set_cursor_pos_polling(true);
+    window.window.set_scroll_polling(true);
+    window.window.set_framebuffer_size_polling(true);
+    window.window.set_cursor_mode(glfw::CursorMode::Disabled);
 
 
-    let mut keybindings: Vec<KeyBinding<Box<dyn Fn(InputFunctionArguments)>>> = vec![
-        KeyBinding::new(Key::Escape, false, Box::new(|args: InputFunctionArguments| args.window.unwrap().set_should_close(true))),
-        KeyBinding::new(Key::W, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::FORWARD, args.delta_time.unwrap()))),
-        KeyBinding::new(Key::A, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::LEFT, args.delta_time.unwrap()))),
-        KeyBinding::new(Key::S, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::BACKWARD, args.delta_time.unwrap()))),
-        KeyBinding::new(Key::D, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::RIGHT, args.delta_time.unwrap()))),
-        KeyBinding::new(Key::Space, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::UP, args.delta_time.unwrap()))),
-        KeyBinding::new(Key::LeftShift, true, Box::new(|args| args.camera.unwrap().process_action_input(CameraMovement::DOWN, args.delta_time.unwrap()))),
-        KeyBinding::new(Key::RightShift, false, Box::new(|args| args.window.unwrap().set_cursor_mode(glfw::CursorMode::Normal))),
-        KeyBinding::new(Key::Enter, false, Box::new(|args| args.window.unwrap().set_cursor_mode(glfw::CursorMode::Disabled))),
-        KeyBinding::new(Key::LeftControl, false, Box::new(|args| args.camera.unwrap().print_position()))
+    let mut keybindings: Vec<KeyBinding> = vec![
+        KeyBinding::new(Key::Escape, false, set_window_should_close),
+        KeyBinding::new(Key::W, true, camera_forward),
+        KeyBinding::new(Key::A, true, camera_left),
+        KeyBinding::new(Key::S, true, camera_backward),
+        KeyBinding::new(Key::D, true, camera_right),
+        KeyBinding::new(Key::Space, true, camera_up),
+        KeyBinding::new(Key::LeftShift, true, camera_down),
+        KeyBinding::new(Key::RightShift, false, toggle_cursor_mode),
+        KeyBinding::new(Key::Enter, false, toggle_cursor_mode_2),
+        KeyBinding::new(Key::LeftControl, false, print_camera_pos)
     ];
     //let vertices: Vec<f32> = vec![
     //    -0.5, -0.5, -0.5,  0.0, 0.0,
@@ -124,47 +121,47 @@ fn main() {
     //    -0.5,  0.5, -0.5,  0.0, 1.0
 //   ];
    let vertices: Vec<f32> = vec![
-        0.0, 0.0, 0.0,  0.0, 0.0,
-         1.0, 0.0, 0.0,  1.0, 0.0,
-         1.0,  1.0, 0.0,  1.0, 1.0,
-         1.0,  1.0, 0.0,  1.0, 1.0,
-        0.0,  1.0, 0.0,  0.0, 1.0,
-        0.0, 0.0, 0.0,  0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
+        1.0, 0.0, 0.0, 1.0, 0.0,
+        1.0, 1.0, 0.0, 1.0, 1.0,
+        1.0, 1.0, 0.0, 1.0, 1.0,
+        0.0, 1.0, 0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, 0.0,
 
-        0.0, 0.0,  1.0,  0.0, 0.0,
-         1.0, 0.0,  1.0,  1.0, 0.0,
-         1.0,  1.0,  1.0,  1.0, 1.0,
-         1.0,  1.0,  1.0,  1.0, 1.0,
-        0.0,  1.0,  1.0,  0.0, 1.0,
-        0.0, 0.0,  1.0,  0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0, 0.0,
+        1.0, 0.0, 1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0,
+        0.0, 1.0, 1.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 0.0, 0.0,
 
-        0.0,  1.0,  1.0,  1.0, 0.0,
-        0.0,  1.0, 0.0,  1.0, 1.0,
-        0.0, 0.0, 0.0,  0.0, 1.0,
-        0.0, 0.0, 0.0,  0.0, 1.0,
-        0.0, 0.0,  1.0,  0.0, 0.0,
-        0.0,  1.0,  1.0,  1.0, 0.0,
+        0.0, 1.0, 1.0, 1.0, 0.0,
+        0.0, 1.0, 0.0, 1.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 0.0, 0.0,
+        0.0, 1.0, 1.0, 1.0, 0.0,
 
-         1.0,  1.0,  1.0,  1.0, 0.0,
-         1.0,  1.0, 0.0,  1.0, 1.0,
-         1.0, 0.0, 0.0,  0.0, 1.0,
-         1.0, 0.0, 0.0,  0.0, 1.0,
-         1.0, 0.0,  1.0,  0.0, 0.0,
-         1.0,  1.0,  1.0,  1.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 0.0,
+        1.0, 1.0, 0.0, 1.0, 1.0,
+        1.0, 0.0, 0.0, 0.0, 1.0,
+        1.0, 0.0, 0.0, 0.0, 1.0,
+        1.0, 0.0, 1.0, 0.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 0.0,
 
-        0.0, 0.0, 0.0,  0.0, 1.0,
-         1.0, 0.0, 0.0,  1.0, 1.0,
-         1.0, 0.0,  1.0,  1.0, 0.0,
-         1.0, 0.0,  1.0,  1.0, 0.0,
-        0.0, 0.0,  1.0,  0.0, 0.0,
-        0.0, 0.0, 0.0,  0.0, 1.0,
+        0.0, 0.0, 0.0, 0.0, 1.0,
+        1.0, 0.0, 0.0, 1.0, 1.0,
+        1.0, 0.0, 1.0, 1.0, 0.0,
+        1.0, 0.0, 1.0, 1.0, 0.0,
+        0.0, 0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 1.0,
 
-        0.0,  1.0, 0.0,  0.0, 1.0,
-         1.0,  1.0, 0.0,  1.0, 1.0,
-         1.0,  1.0,  1.0,  1.0, 0.0,
-         1.0,  1.0,  1.0,  1.0, 0.0,
-        0.0,  1.0,  1.0,  0.0, 0.0,
-        0.0,  1.0, 0.0,  0.0, 1.0
+        0.0, 1.0, 0.0, 0.0, 1.0,
+        1.0, 1.0, 0.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 0.0,
+        0.0, 1.0, 1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0, 1.0
    ];
 
     //let vertices: Vec<f32> = vec![
@@ -205,7 +202,7 @@ fn main() {
     //    vec3(1.5, 0.2, -1.5),
     //    vec3(-1.3, 1.0, -1.5)
     //];
-    let cubes_to_render = has_six_adjacent_vector3s3(&cube_positions);
+    let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
 
 
     let mut vbo: GLuint = 0;
@@ -303,15 +300,15 @@ fn main() {
 
     let mut game_controller = GameController::init();
 
-    while !window.should_close() {
+    while !window.window.should_close() {
 
-        let current_frame = glfw.get_time() as f32;
+        let current_frame = window.context.get_time() as f32;
         delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
-        process_events(&events, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
+        process_events(&window.reciever, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
 
-        process_input(&mut window, &delta_time, &mut keybindings, &mut camera);
+        process_input(&mut window.window, &delta_time, &mut keybindings, &mut camera);
 
         game_controller.run_loop(InputFunctionArguments::new().camera(&mut camera).cube_positions(&cube_positions));
 
@@ -320,11 +317,11 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let (width, height) = window.get_framebuffer_size();
+        let (width, height) = window.window.get_framebuffer_size();
 
         let model: Matrix4<f32> = Matrix4::from_axis_angle(
             vec3(0.5, 1.0, 0.0).normalize(),
-            Rad(glfw.get_time() as f32)
+            Rad(window.context.get_time() as f32)
         );
         let view = camera.get_view_matrix();
         let projection: Matrix4<f32> = perspective(Deg(camera.zoom), width as f32 / height as f32, 0.1, 100.0);
@@ -355,12 +352,12 @@ fn main() {
         }
 
         window.swap_buffers();
-        glfw.poll_events();
+        window.poll_events();
     }
 }
 
 fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut bool, last_x: &mut f32, last_y: &mut f32, camera: &mut Camera) {
-    for (_, event) in glfw::flush_messages(&events) {
+    for (_, event) in glfw::flush_messages(events) {
         match event {
             glfw::WindowEvent::FramebufferSize(width, height) => {
                 unsafe { gl::Viewport(0, 0, width, height) }
@@ -388,48 +385,9 @@ fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut
     }
 }
 
-fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut Vec<KeyBinding<Box<dyn Fn(InputFunctionArguments)>>>, camera: &mut Camera) {
+fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut [KeyBinding], camera: &mut Camera) {
     for binding in bindings.iter_mut() {
         binding.update(binding.key, window.get_key(binding.key), InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time))
     }
 }
-
-fn create_chunk(num: i32) -> Vec<Vector3<f32>> {
-    let mut output: Vec<Vector3<f32>> = vec![];
-    for x in 0..=num-1 {
-        for y in 0..=num-1 {
-            for z in 0..=num-1 {
-                output.push(vec3(x as f32, y as f32, z as f32))
-            }
-        }
-    }
-    output
-}
-
-fn has_six_adjacent_vector3s3(vectors: &[Vector3<f32>]) -> Vec<bool> {
-    let mut tree = KdTree::new(3);
-    let points: Vec<([f32; 3], usize)> = vectors
-        .iter()
-        .enumerate()
-        .map(
-            |v|
-            {
-                tree.add([v.1.x, v.1.y, v.1.z], v.0).unwrap();
-                ([v.1.x, v.1.y, v.1.z], v.0)
-            }
-        ).collect();
-
-    let mut result = vec![false; vectors.len()];
-
-    for (v, i) in points {
-        if (tree.within(&v, 1.0, &squared_euclidean).unwrap().len() - 1) < 6 {
-            result[i] = true;
-        }
-    }
-
-    result
-}
-
-//use i32 for position data
-
 

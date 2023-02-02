@@ -2,7 +2,7 @@ use cgmath::{Vector3, Array, Matrix4, Matrix};
 use gl::{types::*, VERTEX_SHADER, FRAGMENT_SHADER};
 use std::{ffi::{CStr, CString}, fs::read_to_string};
 
-use super::create_whitespace_cstring_with_len;
+use crate::util::create_whitespace_cstring_with_len;
 
 pub struct Shader {
     pub id: u32
@@ -44,22 +44,27 @@ impl Shader {
         gl::UseProgram(self.id)
     }
 
+    #[allow(dead_code)]
     pub unsafe fn set_bool(&self, name: &CStr, value: bool) {
         gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value as i32)
     }
 
+    #[allow(dead_code)]
     pub unsafe fn set_int(&self, name: &CStr, value: i32) {
         gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value)
     }
 
+    #[allow(dead_code)]
     pub unsafe fn set_float(&self, name: &CStr, value: f32) {
         gl::Uniform1f(gl::GetUniformLocation(self.id, name.as_ptr()), value)
     }
 
+    #[allow(dead_code)]
     pub unsafe fn set_vector3(&self, name: &CStr, value: &Vector3<f32>) {
         gl::Uniform3fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, value.as_ptr())
     }
 
+    #[allow(dead_code)]
     pub unsafe fn set_vec3(&self, name: &CStr, x: f32, y: f32, z: f32) {
         gl::Uniform3f(gl::GetUniformLocation(self.id, name.as_ptr()), x, y, z)
     }
@@ -76,7 +81,7 @@ impl Shader {
 
     unsafe fn check_compile_errors(&self, shader: u32, type_: &str) {
         let mut success = gl::FALSE as GLint;
-        let mut info_log = Vec::with_capacity(1024);
+        let mut info_log: Vec<u8> = vec![0; 1024];
         info_log.set_len(1024 - 1); // subtract 1 to skip the trailing null character
         if type_ != "PROGRAM" {
             gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);

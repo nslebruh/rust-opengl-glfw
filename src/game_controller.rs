@@ -1,4 +1,4 @@
-use crate::input_controller::InputFunctionArguments;
+use crate::engine::keybinds::InputFunctionArguments;
 
 pub struct GameController {
     current_loop: i32,
@@ -14,8 +14,7 @@ impl GameController {
         }
     }
 
-    pub fn run_loop(&mut self, args: InputFunctionArguments) {
-        let camera = args.camera.unwrap();
+    pub fn run_loop(&mut self, _args: InputFunctionArguments) {
         self.current_loop += 1;
     }
 }
