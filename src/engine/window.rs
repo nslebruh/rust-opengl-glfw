@@ -84,7 +84,7 @@ impl Window {
     }
     
     pub fn set_cursor_pos_polling(&mut self, val: bool) {
-        self.window.set_framebuffer_size_polling(val)
+        self.window.set_cursor_pos_polling(val)
     }
     pub fn set_scroll_polling(&mut self, val: bool) {
         self.window.set_framebuffer_size_polling(val)

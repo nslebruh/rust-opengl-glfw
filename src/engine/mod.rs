@@ -5,3 +5,4 @@ pub mod camera;
 pub mod generation;
 pub mod shader;
 pub mod util;
+pub mod buffer_object;

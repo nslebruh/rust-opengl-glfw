@@ -1,4 +1,3 @@
-use cgmath::Vector3;
 use glfw::{Key, Action};
 use super::window::Window;
 
@@ -46,7 +45,6 @@ pub struct InputFunctionArguments<'a> {
     pub window: Option<&'a mut Window>,
     pub camera: Option<&'a mut Camera>,
     pub delta_time: Option<&'a f32>,
-    pub cube_positions: Option<&'a Vec<Vector3<f32>>>
 }
 
 impl<'a> InputFunctionArguments<'a> {
@@ -55,7 +53,6 @@ impl<'a> InputFunctionArguments<'a> {
             window: None,
             camera: None,
             delta_time: None,
-            cube_positions: None
         }
     }
 
@@ -79,12 +76,4 @@ impl<'a> InputFunctionArguments<'a> {
             ..self
         }
     }
-
-    pub fn cube_positions(self, cube_positions: &'a Vec<Vector3<f32>>) -> Self {
-        Self {
-            cube_positions: Some(cube_positions),
-            ..self
-        }
-    }
-
 }

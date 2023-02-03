@@ -8,7 +8,7 @@ extern crate image;
 
 use crate::engine::generation::*;
 use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
-use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
+use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Point3};
 use game_controller::GameController;
 
 use engine::shader::Shader;
@@ -22,6 +22,7 @@ use engine::{
     camera::Camera,
     window::Window
 };
+
 fn main() {
     let scr_width: u32 = 1280;
     let scr_height: u32 = 720;
@@ -192,11 +193,9 @@ fn main() {
     //    6, 5, 1     // bottom face
     //];
 
-    let cube_positions: Vec<Vector3<f32>> = gen_cube_chunk_f32(16);
-    let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
-    //let cube_positions: Vec<Vector3<i32>> = gen_cube_chunk_i32(16);
-    //let checked_cube_positions = check_adjacent(&cube_positions);
-    //let cubes_to_render = vec_i32_to_f32(checked_cube_positions);
+    //let cube_positions: Vec<Vector3<f32>> = gen_cube_chunk_f32(16);
+    //let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
+    let cube_positions: Chunk = Chunk::gen(vec3(0, 0, 0), 0);
 
 
     let mut vbo: GLuint = 0;
@@ -304,7 +303,7 @@ fn main() {
 
         process_input(&mut window, &delta_time, &mut keybindings, &mut camera);
 
-        game_controller.run_loop(InputFunctionArguments::new().camera(&mut camera).cube_positions(&cube_positions));
+        game_controller.run_loop(InputFunctionArguments::new().camera(&mut camera));
 
         unsafe {
             gl_clear_color(255, 119, 110, 255);
@@ -331,9 +330,9 @@ fn main() {
             gl::BindTexture(gl::TEXTURE_2D, texture);
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
 
-            for (i, position) in cube_positions.iter().enumerate() {
-                if cubes_to_render[i] {
-                    let  model: Matrix4<f32> = Matrix4::from_translation(*position);
+            for (pos, block) in cube_positions.blocks.iter() {
+                if block.1 {
+                    let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(*pos));
                 //let mut model: Matrix4<f32> = Matrix4::from_translation(*position);
                 //let angle = 20.0 * i as f32;
                 //model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));

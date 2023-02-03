@@ -3,8 +3,9 @@ use cgmath::{vec3, Vector3};
 use std::collections::{HashSet, HashMap};
 
 #[allow(dead_code)]
-type Position = Vector3<i32>;
+type IPosition = Vector3<i32>;
 
+type FPosition = Vector3<f32>;
 
 #[allow(dead_code)]
 type GenerationSeed = u32;
@@ -24,18 +25,18 @@ pub struct BlockData {
 
 #[allow(dead_code)]
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub struct Block(BlockType, BlockData);
+pub struct Block(pub BlockType, pub BlockData);
 
 #[allow(dead_code)]
 pub struct Chunk {
-    position: Vector3<i32>,
-    should_render: bool,
-    blocks: HashMap<Position, (Block, bool)>,
+    pub position: Vector3<i32>,
+    pub should_render: bool,
+    pub blocks: HashMap<IPosition, (Block, bool)>,
     //vec_blocks: Vec<Vec<Vec<(Block, bool)>>>
 }
 #[allow(dead_code)]
 impl Chunk {
-    pub fn gen(position: Position, _seed: GenerationSeed) -> Self {
+    pub fn gen(position: IPosition, _seed: GenerationSeed) -> Self {
         let mut blocks = HashMap::new();
         for x in 0..=15 {
             for y in -0..=15 {
@@ -55,7 +56,7 @@ impl Chunk {
         output
     }
 
-    pub fn is_edge_position(&self, pos: Position) -> bool {
+    pub fn is_edge_position(&self, pos: IPosition) -> bool {
         let min_bounds = Vector3::new(0, 0, 0);
         let max_bounds = Vector3::new(15, 15, 15);
 
@@ -68,7 +69,7 @@ impl Chunk {
     } 
 
     pub fn update_block_visibility(&mut self) {
-        let set: HashSet<Position> = self.blocks.keys().cloned().collect();
+        let set: HashSet<IPosition> = self.blocks.keys().cloned().collect();
         let mut result = HashMap::new();
         let blocks = self.blocks.clone();
         let adjacents: Vec<Vector3<i32>> = vec![
@@ -93,19 +94,7 @@ impl Chunk {
     }
 }
 
-
-pub fn gen_cube_chunk_f32(num: i32) -> Vec<Vector3<f32>> {
-    let mut output: Vec<Vector3<f32>> = vec![];
-    for x in 0..=num-1 {
-        for y in 0..=num-1 {
-            for z in 0..=num-1 {
-                output.push(vec3(x as f32, y as f32, z as f32))
-            }
-        }
-    }
-    output
-}
-
+#[allow(dead_code)]
 pub fn has_six_adjacent_vector3s(vectors: &[Vector3<f32>]) -> Vec<bool> {
     let mut tree = KdTree::new(3);
     let points: Vec<([f32; 3], usize)> = vectors
@@ -168,3 +157,11 @@ pub fn vec_f32_to_i32(vec: Vec<Vector3<f32>>) -> Vec<Vector3<i32>> {
 }
 
 //pub fn cube_pos_i32_to_f32_vec(pos: HashMap<Vector3<i32>>) -> Vec<Vector3<>> {}
+
+pub fn block_pos_to_f32(pos: IPosition) -> FPosition {
+    FPosition {
+        x: pos.x as f32,
+        y: pos.y as f32,
+        z: pos.z as f32
+    }
+}
