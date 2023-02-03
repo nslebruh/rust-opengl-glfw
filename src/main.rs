@@ -1,6 +1,4 @@
 mod game_controller;
-mod shader;
-mod util;
 mod engine;
 
 extern crate glfw;
@@ -13,12 +11,17 @@ use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
 use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Vector3, Point3};
 use game_controller::GameController;
 
-use shader::Shader;
-use util::*;
+use engine::shader::Shader;
+use engine::util::*;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use glfw::Key;
 
-use engine::{keybinds::{KeyBinding, InputFunctionArguments}, input_functions::*, camera::Camera, window::Window};
+use engine::{
+    keybinds::{KeyBinding, InputFunctionArguments},
+    input_functions::*,
+    camera::Camera,
+    window::Window
+};
 fn main() {
     let scr_width: u32 = 1280;
     let scr_height: u32 = 720;
@@ -50,7 +53,7 @@ fn main() {
     //   .expect("Failed to create GLFW window.");
 
 
-    gl::load_with(|ptr| window.window.get_proc_address(ptr) as *const _);
+    gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
     unsafe {
         gl::Enable(gl::DEPTH_TEST);
@@ -59,10 +62,10 @@ fn main() {
     }
 
     window.make_current();
-    window.window.set_cursor_pos_polling(true);
-    window.window.set_scroll_polling(true);
-    window.window.set_framebuffer_size_polling(true);
-    window.window.set_cursor_mode(glfw::CursorMode::Disabled);
+    window.set_cursor_pos_polling(true);
+    window.set_scroll_polling(true);
+    window.set_framebuffer_size_polling(true);
+    window.set_cursor_mode(glfw::CursorMode::Disabled);
 
 
     let mut keybindings: Vec<KeyBinding> = vec![
@@ -189,20 +192,11 @@ fn main() {
     //    6, 5, 1     // bottom face
     //];
 
-    let cube_positions: Vec<Vector3<f32>> = create_chunk(16);
-    //let cube_positions: Vec<Vector3<f32>> = vec![
-    //    vec3(0.0, 0.0, -5.0),
-    //    vec3(2.0, 5.0, -15.0),
-    //    vec3(-1.5, -2.2, -2.5),
-    //    vec3(-3.8, -2.0, -12.3),
-    //    vec3(2.4, -0.4, -3.5),
-    //    vec3(-1.7, 3.0, -7.5),
-    //    vec3(1.3, -2.0, -2.5),
-    //    vec3(1.5, 2.0, -2.5),
-    //    vec3(1.5, 0.2, -1.5),
-    //    vec3(-1.3, 1.0, -1.5)
-    //];
+    let cube_positions: Vec<Vector3<f32>> = gen_cube_chunk_f32(16);
     let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
+    //let cube_positions: Vec<Vector3<i32>> = gen_cube_chunk_i32(16);
+    //let checked_cube_positions = check_adjacent(&cube_positions);
+    //let cubes_to_render = vec_i32_to_f32(checked_cube_positions);
 
 
     let mut vbo: GLuint = 0;
@@ -300,7 +294,7 @@ fn main() {
 
     let mut game_controller = GameController::init();
 
-    while !window.window.should_close() {
+    while !window.should_close() {
 
         let current_frame = window.context.get_time() as f32;
         delta_time = current_frame - last_frame;
@@ -317,7 +311,7 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let (width, height) = window.window.get_framebuffer_size();
+        let (width, height) = window.get_framebuffer_size();
 
         let model: Matrix4<f32> = Matrix4::from_axis_angle(
             vec3(0.5, 1.0, 0.0).normalize(),

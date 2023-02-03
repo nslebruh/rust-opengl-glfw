@@ -2,7 +2,7 @@ use cgmath::{Vector3, Array, Matrix4, Matrix};
 use gl::{types::*, VERTEX_SHADER, FRAGMENT_SHADER};
 use std::{ffi::{CStr, CString}, fs::read_to_string};
 
-use crate::util::create_whitespace_cstring_with_len;
+use super::util::create_whitespace_cstring_with_len;
 
 pub struct Shader {
     pub id: u32

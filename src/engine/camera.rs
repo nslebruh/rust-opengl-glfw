@@ -39,7 +39,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         let mut camera = Self {
-            position: Point3::new(1.0, 1.0, 1.0),
+            position: Point3::new(0.0, 0.0, 0.0),
             front: vec3(0.0, 0.0, -1.0),
             up: Vector3::zero(),
             right: Vector3::zero(),

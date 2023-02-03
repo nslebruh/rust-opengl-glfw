@@ -75,4 +75,27 @@ impl Window {
         self.window.set_cursor_mode(mode)
     }
 
+    pub fn get_framebuffer_size(&mut self) -> (i32, i32) {
+        self.window.get_framebuffer_size()
+    }
+
+    pub fn set_framebuffer_size_polling(&mut self, val: bool) {
+        self.window.set_framebuffer_size_polling(val)
+    }
+    
+    pub fn set_cursor_pos_polling(&mut self, val: bool) {
+        self.window.set_framebuffer_size_polling(val)
+    }
+    pub fn set_scroll_polling(&mut self, val: bool) {
+        self.window.set_framebuffer_size_polling(val)
+    }
+
+    pub fn get_proc_address(&mut self, procname: &str) -> glfw::GLProc  {
+        self.window.get_proc_address(procname)
+    }
+
+    pub fn should_close(&mut self) -> bool {
+        self.window.should_close()
+    }
+
 }
