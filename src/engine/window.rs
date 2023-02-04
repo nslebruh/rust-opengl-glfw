@@ -3,6 +3,8 @@ use thiserror::Error;
 
 use glfw::{WindowEvent, InitError, Context};
 
+use super::camera::Camera;
+
 #[derive(Debug, Error)]
 pub enum WindowInitError {
     #[error("Failed to initialise glfw")]
@@ -15,28 +17,34 @@ pub enum WindowInitError {
 pub struct Window {
     pub context: glfw::Glfw,
     pub window: glfw::Window,
-    pub reciever: Receiver<(f64, WindowEvent)>,
-    pub prev_height: u32,
-    pub prev_width: u32,
+    pub receiver: Receiver<(f64, WindowEvent)>,
+    pub is_fullscreen: bool,
+    pub last_pos: (i32, i32),
+    pub last_size: (i32, i32)
 }
 
 impl Window {
     pub fn init(width: u32, height: u32, title: &str, mode: glfw::WindowMode, hints: Vec<glfw::WindowHint>) -> Result<Self, WindowInitError> {
         let glfw = glfw::init(glfw::FAIL_ON_ERRORS);
         match glfw {
-            Ok(mut gres) => {
+            Ok(mut glfw_res) => {
                 for hint in hints {
-                    gres.window_hint(hint)
+                    glfw_res.window_hint(hint)
                 }
-                let window = gres.create_window(width, height, title, mode);
+                let window = glfw_res.create_window(width, height, title, mode);
                 match window {
-                    Some(res) => {
+                    Some(window_res) => {
                         Ok(Self {
-                            context: gres,
-                            window: res.0,
-                            reciever: res.1,
-                            prev_height: height,
-                            prev_width: width
+                            context: glfw_res,
+                            window: window_res.0,
+                            receiver: window_res.1,
+                            last_pos: (0, 0),
+                            last_size: (width as i32, height as i32),
+                            is_fullscreen: match mode {
+                                glfw::WindowMode::FullScreen(_) => true,
+                                glfw::WindowMode::Windowed => false
+                            }
+                            
                         })
                     },
                     None => {
@@ -45,6 +53,41 @@ impl Window {
                 }
             },
             Err(err) => Err(WindowInitError::InitError(err)),
+        }
+    }
+
+    pub fn process_events(&mut self, first_mouse: &mut bool, last_x: &mut f32, last_y: &mut f32, camera: &mut Camera) {
+        for (_, event) in glfw::flush_messages(&self.receiver) {
+            match event {
+                glfw::WindowEvent::FramebufferSize(width, height) => {
+                    unsafe { gl::Viewport(0, 0, width, height) }
+                },
+                glfw::WindowEvent::Pos(xpos, ypos) => {
+                    self.last_pos = (xpos, ypos);
+                },
+                glfw::WindowEvent::Size(width, height) => {
+                    self.last_size = (width, height);
+                },
+                glfw::WindowEvent::CursorPos(x_pos, y_pos) => {
+                    let (xpos, ypos) = (x_pos as f32, y_pos as f32);
+                    if *first_mouse {
+                        *last_x = xpos;
+                        *last_y = ypos;
+                        *first_mouse = false;
+                    }
+    
+                    let x_offset = xpos - *last_x;
+                    let y_offset = *last_y - ypos;
+    
+                    *last_x = xpos;
+                    *last_y = ypos;
+                    camera.process_mouse_input(x_offset, y_offset, true)
+                },
+                glfw::WindowEvent::Scroll(_x_offset, y_offset) => {
+                    camera.process_scroll_input(y_offset as f32);
+                },
+                _ => {}
+            }
         }
     }
 
@@ -67,7 +110,31 @@ impl Window {
 
     #[allow(dead_code)]
     pub fn toggle_fullscreen(&mut self) {
+        if self.is_fullscreen {
+                self.set_monitor(
+                    glfw::WindowMode::Windowed,
+                    self.last_pos.0,
+                    self.last_pos.1,
+                    self.last_size.0,
+                    self.last_size.1,
+                    None
+                );
+            self.is_fullscreen = false;
+        } else {
+            self.last_pos = self.get_pos();
+            self.last_size = self.get_size();
 
+            self.context.with_primary_monitor(|_: &mut glfw::Glfw, m: Option<&glfw::Monitor>| {
+                let monitor = m.unwrap();
+
+                let mode = monitor.get_video_mode().unwrap();
+                
+                self.window.set_monitor(glfw::WindowMode::FullScreen(monitor), 0, 0, mode.width, mode.height, Some(mode.refresh_rate))
+                
+            });
+            self.is_fullscreen = true;
+
+        }
     }
 
     pub fn get_key(&mut self, key: glfw::Key) -> glfw::Action {
@@ -101,4 +168,25 @@ impl Window {
         self.window.should_close()
     }
 
+    pub fn set_monitor(&mut self, mode: glfw::WindowMode, xpos: i32, ypos: i32, width: i32, height: i32, refresh_rate: Option<u32>) {
+        self.window.set_monitor(mode, xpos, ypos, width as u32, height as u32, refresh_rate)
+    }
+
+    #[allow(dead_code)]
+    pub fn set_pos(&mut self, xpos: i32, ypos: i32) {
+        self.window.set_size(xpos, ypos)
+    }
+    
+    #[allow(dead_code)]
+    pub fn set_size(&mut self, width: i32, height: i32) {
+        self.window.set_size(width, height)
+    }
+
+    pub fn get_pos(&mut self) -> (i32, i32) {
+        self.window.get_pos()
+    }
+
+    pub fn get_size(&mut self) -> (i32, i32) {
+        self.window.get_size()
+    }
 }

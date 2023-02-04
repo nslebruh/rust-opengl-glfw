@@ -1,3 +1,4 @@
+mod game;
 mod engine;
 
 extern crate nalgebra_glm as glm;
@@ -7,7 +8,7 @@ extern crate lazy_static;
 extern crate image;
 
 use crate::engine::generation::*;
-use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
+use std::{mem::size_of, path::Path, ffi::c_void};
 use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Point3};
 
 use engine::shader::Shader;
@@ -78,6 +79,7 @@ fn main() {
         KeyBinding::new(Key::RightShift, false, toggle_cursor_mode),
         KeyBinding::new(Key::RightControl, false, print_camera_pos),
         KeyBinding::new(Key::LeftControl, false, increase_movement_speed),
+        KeyBinding::new(Key::F11, false, toggle_fullscreen)
     ];
 
     //let vertices: Vec<f32> = vec![
@@ -290,14 +292,13 @@ fn main() {
         gl::BindVertexArray(vao);
     }
 
-
     while !window.should_close() {
 
         let current_frame = window.context.get_time() as f32;
         delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
-        process_events(&window.reciever, &mut first_mouse, &mut last_x, &mut last_y, &mut camera);
+        window.process_events(&mut first_mouse, &mut last_x, &mut last_y, &mut camera);
 
         process_input(&mut window, &delta_time, &mut keybindings, &mut camera);
 
@@ -346,34 +347,40 @@ fn main() {
     }
 }
 
-fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut bool, last_x: &mut f32, last_y: &mut f32, camera: &mut Camera) {
-    for (_, event) in glfw::flush_messages(events) {
-        match event {
-            glfw::WindowEvent::FramebufferSize(width, height) => {
-                unsafe { gl::Viewport(0, 0, width, height) }
-            },
-            glfw::WindowEvent::CursorPos(x_pos, y_pos) => {
-                let (xpos, ypos) = (x_pos as f32, y_pos as f32);
-                if *first_mouse {
-                    *last_x = xpos;
-                    *last_y = ypos;
-                    *first_mouse = false;
-                }
-
-                let x_offset = xpos - *last_x;
-                let y_offset = *last_y - ypos;
-
-                *last_x = xpos;
-                *last_y = ypos;
-                camera.process_mouse_input(x_offset, y_offset, true)
-            },
-            glfw::WindowEvent::Scroll(_x_offset, y_offset) => {
-                camera.process_scroll_input(y_offset as f32);
-            },
-            _ => {}
-        }
-    }
-}
+//fn process_events(events: &Receiver<(f64, WindowEvent)>, window: &mut Window, first_mouse: &mut bool, last_x: &mut f32, last_y: &mut f32, camera: &mut Camera) {
+//    for (_, event) in glfw::flush_messages(events) {
+//        match event {
+//            glfw::WindowEvent::FramebufferSize(width, height) => {
+//                unsafe { gl::Viewport(0, 0, width, height) }
+//            },
+//            glfw::WindowEvent::Pos(xpos, ypos) => {
+//                window.set_last_pos(xpos, ypos);
+//            },
+//            glfw::WindowEvent::Size(width, height) => {
+//                window.set_last_size(width, height);
+//            },
+//            glfw::WindowEvent::CursorPos(x_pos, y_pos) => {
+//                let (xpos, ypos) = (x_pos as f32, y_pos as f32);
+//                if *first_mouse {
+//                    *last_x = xpos;
+//                    *last_y = ypos;
+//                    *first_mouse = false;
+//                }
+//
+//                let x_offset = xpos - *last_x;
+//                let y_offset = *last_y - ypos;
+//
+//                *last_x = xpos;
+//                *last_y = ypos;
+//                camera.process_mouse_input(x_offset, y_offset, true)
+//            },
+//            glfw::WindowEvent::Scroll(_x_offset, y_offset) => {
+//                camera.process_scroll_input(y_offset as f32);
+//            },
+//            _ => {}
+//        }
+//    }
+//}
 
 fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut [KeyBinding], camera: &mut Camera) {
     for binding in bindings.iter_mut() {
