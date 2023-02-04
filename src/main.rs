@@ -1,6 +1,6 @@
-mod game_controller;
 mod engine;
 
+extern crate nalgebra_glm as glm;
 extern crate glfw;
 extern crate gl;
 extern crate lazy_static;
@@ -9,7 +9,6 @@ extern crate image;
 use crate::engine::generation::*;
 use std::{mem::size_of, sync::mpsc::Receiver, path::Path, ffi::c_void};
 use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Point3};
-use game_controller::GameController;
 
 use engine::shader::Shader;
 use engine::util::*;
@@ -17,7 +16,7 @@ use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use glfw::Key;
 
 use engine::{
-    keybinds::{KeyBinding, InputFunctionArguments},
+    keybinds::*,
     input_functions::*,
     camera::Camera,
     window::Window
@@ -27,7 +26,7 @@ fn main() {
     let scr_width: u32 = 1280;
     let scr_height: u32 = 720;
 
-    let img = image::open(&Path::new("images.png")).unwrap().to_rgba();
+    let img = image::open(&Path::new("dirt.png")).unwrap().to_rgba();
     let data = img.to_vec();
 
     let mut camera = Camera {
@@ -42,17 +41,16 @@ fn main() {
     let mut delta_time: f32;
     let mut last_frame: f32 = 0.0;
 
-    let mut window: Window = Window::init(scr_width, scr_height, "test title", glfw::WindowMode::Windowed, vec![glfw::WindowHint::ContextVersion(3, 3), glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core)]).unwrap(); 
-
-    //let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-
-    //glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
-    //glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
-    //#[cfg(target_os = "macos")]
-    //glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
-    //let (mut window, events) = glfw.create_window(scr_width, scr_height, "Hello this is window", glfw::WindowMode::Windowed)
-    //   .expect("Failed to create GLFW window.");
-
+    let mut window: Window = Window::init(
+        scr_width,
+        scr_height,
+        "test title",
+        glfw::WindowMode::Windowed,
+        vec![
+            glfw::WindowHint::ContextVersion(3, 3),
+            glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core)
+            ]
+    ).unwrap(); 
 
     gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
@@ -78,9 +76,10 @@ fn main() {
         KeyBinding::new(Key::Space, true, camera_up),
         KeyBinding::new(Key::LeftShift, true, camera_down),
         KeyBinding::new(Key::RightShift, false, toggle_cursor_mode),
-        KeyBinding::new(Key::Enter, false, toggle_cursor_mode_2),
-        KeyBinding::new(Key::LeftControl, false, print_camera_pos)
+        KeyBinding::new(Key::RightControl, false, print_camera_pos),
+        KeyBinding::new(Key::LeftControl, false, increase_movement_speed),
     ];
+
     //let vertices: Vec<f32> = vec![
     //    -0.5, -0.5, -0.5,  0.0, 0.0,
     //     0.5, -0.5, -0.5,  1.0, 0.0,
@@ -267,8 +266,8 @@ fn main() {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
 
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
     }
 
     unsafe {
@@ -291,7 +290,6 @@ fn main() {
         gl::BindVertexArray(vao);
     }
 
-    let mut game_controller = GameController::init();
 
     while !window.should_close() {
 
@@ -303,7 +301,6 @@ fn main() {
 
         process_input(&mut window, &delta_time, &mut keybindings, &mut camera);
 
-        game_controller.run_loop(InputFunctionArguments::new().camera(&mut camera));
 
         unsafe {
             gl_clear_color(255, 119, 110, 255);
@@ -323,7 +320,7 @@ fn main() {
             shader_program.set_mat4("model", &model);
             shader_program.set_mat4("view", &view);
             shader_program.set_mat4("projection", &projection);
-            shader_program.set_vec4("ourColor", 1.0, 1.0, 1.0, 1.0);
+            shader_program.set_vec4("ourColor", 1.0, 1.0, 1.0, 0.0);
         }
         unsafe {
             shader_program.use_program();
@@ -380,7 +377,8 @@ fn process_events(events: &Receiver<(f64, glfw::WindowEvent)>, first_mouse: &mut
 
 fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut [KeyBinding], camera: &mut Camera) {
     for binding in bindings.iter_mut() {
-        binding.update(binding.key, window.get_key(binding.key), InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time))
+        let action = window.get_key(binding.key);
+        binding.update(action, InputFunctionArguments::new().camera(camera).window(window).delta_time(delta_time).action(&action))
     }
 }
 

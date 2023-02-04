@@ -7,8 +7,21 @@ pub enum BufferType {
 }
 
 #[allow(dead_code)]
-pub struct Buffer {
-    b_type: BufferType,
+pub struct VertexArrayObject {
     id: u32
+}
 
+#[allow(dead_code)]
+pub struct TextureBufferObject {
+    id: u32
+}
+
+#[allow(dead_code)]
+pub struct ElementBufferObject {
+    id: u32
+}
+
+#[allow(dead_code)]
+pub struct VertexBufferObject {
+    id: u32
 }

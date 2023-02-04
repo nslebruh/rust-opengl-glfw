@@ -20,8 +20,7 @@ impl KeyBinding {
         }
     }
 
-    pub fn update(&mut self, key: Key, action: Action, args: InputFunctionArguments) {
-        if self.key == key {
+    pub fn update(&mut self, action: Action, args: InputFunctionArguments) {
             if self.run_every_frame {
                 if action == Action::Press {
                     (self.callback)(args)
@@ -32,19 +31,24 @@ impl KeyBinding {
                         self.state = true;
                         (self.callback)(args);
                     },
+                    Action::Release if self.state => {
+                        self.state = false;
+                        (self.callback)(args);
+                    },
                     Action::Release => {
                         self.state = false;
-                    }
+                    },
                     _ => {}
                 }
             }
-        }
     }
+
 }
 pub struct InputFunctionArguments<'a> {
     pub window: Option<&'a mut Window>,
     pub camera: Option<&'a mut Camera>,
     pub delta_time: Option<&'a f32>,
+    pub action: Option<&'a Action>
 }
 
 impl<'a> InputFunctionArguments<'a> {
@@ -53,6 +57,7 @@ impl<'a> InputFunctionArguments<'a> {
             window: None,
             camera: None,
             delta_time: None,
+            action: None
         }
     }
 
@@ -76,4 +81,11 @@ impl<'a> InputFunctionArguments<'a> {
             ..self
         }
     }
+
+    pub fn action(self, action: &'a Action) -> Self {
+        Self {
+            action: Some(action),
+            ..self
+        }
+    } 
 }

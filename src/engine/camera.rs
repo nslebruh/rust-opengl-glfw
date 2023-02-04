@@ -20,8 +20,14 @@ const SPEED: f32 = 2.5;
 const SENSITIVTY: f32 = 0.1;
 const ZOOM: f32 = 45.0;
 
+/// Camera struct
+/// 
+/// Implements Debug
+/// 
+/// 
 #[derive(Debug)]
 pub struct Camera {
+    /// 
     pub position: Point3,
     pub front: Vector3,
     pub up: Vector3,
@@ -34,6 +40,7 @@ pub struct Camera {
     pub movement_speed: f32,
     pub mouse_sensitivity: f32,
     pub zoom: f32,
+    pub cursor_mode: bool
 }
 
 impl Default for Camera {
@@ -48,7 +55,9 @@ impl Default for Camera {
             pitch: PITCH,
             movement_speed: SPEED,
             mouse_sensitivity: SENSITIVTY,
-            zoom: ZOOM
+            zoom: ZOOM,
+            cursor_mode: false
+
         };
         camera.update_camera_vectors();
         camera

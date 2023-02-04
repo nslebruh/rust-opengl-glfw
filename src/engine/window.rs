@@ -1,10 +1,13 @@
 use std::sync::mpsc::Receiver;
+use thiserror::Error;
 
 use glfw::{WindowEvent, InitError, Context};
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum WindowInitError {
+    #[error("Failed to initialise glfw")]
     InitError(InitError),
+    #[error("Failed to create glfw window")]
     CreationError(String)
 }
 
@@ -13,8 +16,8 @@ pub struct Window {
     pub context: glfw::Glfw,
     pub window: glfw::Window,
     pub reciever: Receiver<(f64, WindowEvent)>,
-    prev_height: u32,
-    prev_width: u32,
+    pub prev_height: u32,
+    pub prev_width: u32,
 }
 
 impl Window {
@@ -87,7 +90,7 @@ impl Window {
         self.window.set_cursor_pos_polling(val)
     }
     pub fn set_scroll_polling(&mut self, val: bool) {
-        self.window.set_framebuffer_size_polling(val)
+        self.window.set_scroll_polling(val)
     }
 
     pub fn get_proc_address(&mut self, procname: &str) -> glfw::GLProc  {

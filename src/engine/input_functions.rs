@@ -29,13 +29,17 @@ pub fn camera_down(args: InputFunctionArguments) {
 }
 
 pub fn toggle_cursor_mode(args: InputFunctionArguments) {
-    args.window.unwrap().set_cursor_mode(glfw::CursorMode::Normal)
-}
-
-pub fn toggle_cursor_mode_2(args: InputFunctionArguments) {
-    args.window.unwrap().set_cursor_mode(glfw::CursorMode::Disabled)
+    
+    args.window.unwrap().set_cursor_mode(if args.action.unwrap() == &glfw::Action::Press {glfw::CursorMode::Normal} else {glfw::CursorMode::Disabled})
 }
 
 pub fn print_camera_pos(args: InputFunctionArguments) {
-    println!("{:?}", args.camera.unwrap().position)
+    if args.action.unwrap() == &glfw::Action::Press {
+        println!("{:?}", args.camera.unwrap().position)
+    }
+    
+}
+
+pub fn increase_movement_speed(args: InputFunctionArguments) {
+    args.camera.unwrap().movement_speed = if args.action.unwrap() == &glfw::Action::Press {5.0} else {2.5};
 }

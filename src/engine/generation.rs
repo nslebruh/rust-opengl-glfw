@@ -1,4 +1,3 @@
-use kdtree::{KdTree, distance::squared_euclidean};
 use cgmath::{vec3, Vector3};
 use std::collections::{HashSet, HashMap};
 
@@ -25,7 +24,7 @@ pub struct BlockData {
 
 #[allow(dead_code)]
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub struct Block(pub BlockType, pub BlockData);
+pub struct Block(pub BlockType);
 
 #[allow(dead_code)]
 pub struct Chunk {
@@ -42,7 +41,7 @@ impl Chunk {
             for y in -0..=15 {
                 for z in 0..=15 {
                     let b_type: BlockType = if y > 12 {BlockType::Air} else if y == 1 {BlockType::Grass} else {BlockType::Dirt};
-                    blocks.insert(vec3(x, y, z), (Block(b_type, BlockData {transparent: false}), false));
+                    blocks.insert(vec3(x, y, z), (Block(b_type), false));
                 }
             }
         }
@@ -92,34 +91,9 @@ impl Chunk {
         }
         self.blocks = result
     }
+
 }
 
-#[allow(dead_code)]
-pub fn has_six_adjacent_vector3s(vectors: &[Vector3<f32>]) -> Vec<bool> {
-    let mut tree = KdTree::new(3);
-    let points: Vec<([f32; 3], usize)> = vectors
-        .iter()
-        .enumerate()
-        .map(
-            |v|
-            {
-                tree.add([v.1.x, v.1.y, v.1.z], v.0).unwrap();
-                ([v.1.x, v.1.y, v.1.z], v.0)
-            }
-        ).collect();
-
-    let mut result = vec![false; vectors.len()];
-
-    for (v, i) in points {
-        if (tree.within(&v, 1.0, &squared_euclidean).unwrap().len() - 1) < 6 {
-            result[i] = true;
-        }
-    }
-
-    result
-}
-
-//use i32 for position data
 #[allow(dead_code)]
 pub fn check_adjacent(vectors: &[Vector3<i32>]) -> HashMap<Vector3<i32>, bool> {
     let set: HashSet<Vector3<i32>> = vectors.iter().cloned().collect();
