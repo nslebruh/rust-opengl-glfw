@@ -196,7 +196,7 @@ fn main() {
 
     //let cube_positions: Vec<Vector3<f32>> = gen_cube_chunk_f32(16);
     //let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
-    let cube_positions: Chunk = Chunk::gen(vec3(0, 0, 0), 0);
+    let cube_positions: Chunk = Chunk::gen(vec3(0, 0, 0));
 
 
     let mut vbo: GLuint = 0;

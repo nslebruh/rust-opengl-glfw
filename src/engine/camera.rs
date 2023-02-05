@@ -86,10 +86,10 @@ impl Camera {
                 self.position += self.right * velocity;
             },
             CameraMovement::Up => {
-                self.position += self.up * velocity;
+                self.position += self.world_up * velocity;
             },
             CameraMovement::Down => {
-                self.position += -(self.up * velocity);
+                self.position += -(self.world_up * velocity);
             },
         }
     }

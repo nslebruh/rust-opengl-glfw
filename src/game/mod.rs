@@ -10,6 +10,10 @@ pub struct World {
 }
 
 pub struct Chunk {
+    pub blocks: Vec<Vec<Vec<Block>>>
+}
+
+pub struct Block {
 
 }
 
@@ -22,5 +26,5 @@ pub struct Texture {
 }
 
 pub struct VertexBufferObject {
-    
+
 }

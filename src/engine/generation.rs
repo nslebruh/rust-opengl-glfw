@@ -1,5 +1,7 @@
 use cgmath::{vec3, Vector3};
+use noise::{Fbm, Perlin};
 use std::collections::{HashSet, HashMap};
+use noise::utils::*;
 
 #[allow(dead_code)]
 type IPosition = Vector3<i32>;
@@ -35,13 +37,26 @@ pub struct Chunk {
 }
 #[allow(dead_code)]
 impl Chunk {
-    pub fn gen(position: IPosition, _seed: GenerationSeed) -> Self {
-        let mut blocks = HashMap::new();
+    pub fn gen(position: IPosition) -> Self {
+        let mut blocks: HashMap<Vector3<i32>, (Block, bool)> = HashMap::new();
+        let fbm = Fbm::<Perlin>::new(0);
+        let plane_map = PlaneMapBuilder::<_, 2>::new(fbm)
+        .set_size(16, 16)
+        .set_x_bounds(0.0, 1.0)
+        .set_y_bounds(0.0, 1.0)
+        .build();
+
+        println!("1 / 256 = {}", 1.0f64 / 256.0f64);
+
+        let _ = &plane_map.write_to_file("test2.png");
         for x in 0..=15 {
-            for y in -0..=15 {
+            for y in 0..=255 {
                 for z in 0..=15 {
+                    if y == 0 {
+                        println!("y value: {}", plane_map.get_value(x, z) * 256.0f64);
+                    }
                     let b_type: BlockType = if y > 12 {BlockType::Air} else if y == 1 {BlockType::Grass} else {BlockType::Dirt};
-                    blocks.insert(vec3(x, y, z), (Block(b_type), false));
+                    blocks.insert(vec3(x as i32 - 15 , y as i32 - 255, z as i32 - 15), (Block(b_type), false));
                 }
             }
         }
@@ -139,3 +154,19 @@ pub fn block_pos_to_f32(pos: IPosition) -> FPosition {
         z: pos.z as f32
     }
 }
+
+pub fn write_example_to_file(map: &NoiseMap, filename: &str) {
+    use std::{fs, path::Path};
+
+    let target_dir = Path::new("example_images/");
+
+    if !target_dir.exists() {
+        fs::create_dir(target_dir).expect("failed to create example_images directory");
+    }
+
+    let target = target_dir.join(Path::new(filename));
+
+    map.write_to_file(target.to_str().unwrap())
+}
+
+pub fn noise() {}
