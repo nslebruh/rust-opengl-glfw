@@ -1,7 +1,6 @@
 use cgmath::{vec3, Vector3};
-use noise::{Fbm, Perlin};
 use std::collections::{HashSet, HashMap};
-use noise::utils::*;
+use simdnoise::NoiseBuilder;
 
 #[allow(dead_code)]
 type IPosition = Vector3<i32>;
@@ -28,7 +27,34 @@ pub struct BlockData {
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct Block(pub BlockType);
 
+pub struct World {
+    pub chunks: Vec<Vec<Chunk>>,
+    seed: i32,
+}
+
+impl World {
+    pub fn new(square_size: usize, seed: i32) -> Self {
+        let mut chunks: Vec<Vec<Chunk>> = vec![];
+        let mut z_chunks: Vec<Chunk> = vec![];
+
+        for x in 0..=square_size - 1 {
+            z_chunks = vec![];
+            for z in 0..=square_size - 1 {
+                z_chunks.push(Chunk::gen(vec3(x as i32, 1, z as i32), seed))
+            }
+            println!("{}", z_chunks.len());
+            chunks.push(z_chunks);
+        }
+
+        Self {
+            seed,
+            chunks
+        }
+    }
+}
+
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Chunk {
     pub position: Vector3<i32>,
     pub should_render: bool,
@@ -36,10 +62,21 @@ pub struct Chunk {
     //vec_blocks: Vec<Vec<Vec<(Block, bool)>>>
 }
 #[allow(dead_code)]
+
 impl Chunk {
-    pub fn gen(position: IPosition) -> Self {
+    pub fn gen(position: IPosition, seed: i32) -> Self {
+        println!("{:?}", &position);
         let mut blocks: HashMap<Vector3<i32>, (Block, bool)> = HashMap::new();
-        let noise = simdnoise::NoiseBuilder::fbm_2d(16, 16).generate_scaled(0.0, 2.56);
+        let noise = simdnoise::NoiseBuilder::fbm_2d_offset(position.x as f32, 16, position.z as f32, 16).with_seed(seed).generate_scaled(0.0, 2.56);
+
+        for (x, chunk) in noise.chunks(16).enumerate() {
+            for (z, val) in chunk.iter().enumerate() {
+                let y = ((*val * 100.0).trunc() as i32) / 16;
+                for i in 0..=y {
+                    blocks.insert(vec3(x as i32, i as i32, z as i32), (Block(BlockType::Dirt), false));
+                }
+            }
+        }
 
         //let mut z_pos: usize = 0;
         //for (i, n) in noise.iter().enumerate() {
@@ -167,19 +204,3 @@ pub fn block_pos_to_f32(pos: IPosition) -> FPosition {
         z: pos.z as f32
     }
 }
-
-pub fn write_example_to_file(map: &NoiseMap, filename: &str) {
-    use std::{fs, path::Path};
-
-    let target_dir = Path::new("example_images/");
-
-    if !target_dir.exists() {
-        fs::create_dir(target_dir).expect("failed to create example_images directory");
-    }
-
-    let target = target_dir.join(Path::new(filename));
-
-    map.write_to_file(target.to_str().unwrap())
-}
-
-pub fn noise() {}

@@ -27,7 +27,7 @@ fn main() {
     let scr_width: u32 = 1280;
     let scr_height: u32 = 720;
 
-    let img = image::open(&Path::new("dirt.png")).unwrap().to_rgba();
+    let img = image::open(&Path::new("dirt.png")).unwrap().to_rgba8();
     let data = img.to_vec();
 
     let mut camera = Camera {
@@ -169,34 +169,18 @@ fn main() {
         0.0, 1.0, 0.0, 0.0, 1.0
    ];
 
-    //let vertices: Vec<f32> = vec![
-    //     0.5,  0.5, 0.0, 1.0, 1.0,   // 0 front top right
-    //     0.5, -0.5, 0.0, 1.0, 0.0,   // 1 front bottom right
-    //    -0.5, -0.5, 0.0, 0.0, 0.0,   // 2 front bottom left
-    //    -0.5,  0.5, 0.0, 0.0, 1.0,   // 3 front top left
-    //     0.5,  0.5, 1.0, 1.0, 1.0,   // 4 back top right
-    //     0.5, -0.5, 1.0, 1.0, 0.0,   // 5 back bottom right
-    //    -0.5, -0.5, 1.0, 0.0, 0.0,   // 6 back bottom left
-    //    -0.5,  0.5, 1.0, 0.0, 1.0    // 7 back top left
-    //];
-    //let indices = [
-    //    0, 1, 3,    //
-    //    1, 2, 3,    // bottom face
-    //    4, 5, 0,    //
-    //    5, 1, 0,    // left face
-    //    7, 6, 4,    //
-    //    6, 5, 4,    // top face
-    //    7, 6, 3,    //
-    //    6, 2, 3,    // right face
-    //    4, 0, 7,    //
-    //    0, 3, 7,    // top face
-    //    2, 6, 1,    //
-    //    6, 5, 1     // bottom face
-    //];
-
     //let cube_positions: Vec<Vector3<f32>> = gen_cube_chunk_f32(16);
     //let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
-    let cube_positions: Chunk = Chunk::gen(vec3(0, 0, 0));
+
+    let world = World::new(3, 1);
+    //let cube_positions: Chunk = Chunk::gen(vec3(0, 0, 0), 1);
+    let pos1 = vec3(1, 2, 3);
+    let pos2 = vec3(4, 5, 6);
+    println!("Dot product of pos1 ~ pos2: {}", pos1.dot(pos2));
+    println!("Dot product of pos2 ~ pos1: {}", pos2.dot(pos1));
+    println!("Cross product of pos1 ~ pos2: {:?}", pos1.cross(pos2));
+    println!("Cross product of pos2 ~ pos1: {:?}", pos2.cross(pos1));
+    println!("proper tuple multiplication: {:?}", multiply_the_values(&pos1, &pos2));
 
 
     let mut vbo: GLuint = 0;
@@ -327,19 +311,37 @@ fn main() {
             shader_program.use_program();
             gl::BindTexture(gl::TEXTURE_2D, texture);
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
-
-            for (pos, block) in cube_positions.blocks.iter() {
-                if block.1 {
-                    let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(*pos));
-                //let mut model: Matrix4<f32> = Matrix4::from_translation(*position);
-                //let angle = 20.0 * i as f32;
-                //model = model * Matrix4::from_axis_angle(vec3(1.0, 0.3, 0.5).normalize(), Deg(angle));
-
-                shader_program.set_mat4("model", &model);
-                //gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
-                gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
+            for chunk_vec in &world.chunks {
+                for chunk in chunk_vec {
+                    for (pos, block) in chunk.blocks.iter() {
+                        if block.1 {
+                            let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(pos + (chunk.position * 16)));
+                            shader_program.set_mat4("model", &model);
+                            gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
+                        }
+                    }
                 }
             }
+            //world.chunks.iter().for_each(|chunk_vec| {
+            //    chunk_vec.iter().for_each(|chunk| {
+            //        chunk.blocks.iter().for_each(|(pos, block)| {
+            //            if block.1 {
+            //                let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(pos + (chunk.position * 16)));
+            //                shader_program.set_mat4("model", &model);
+            //                gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
+            //            }
+            //        });
+            //    });
+            //});
+
+            //for (pos, block) in cube_positions.blocks.iter() {
+            //    if block.1 {
+            //        let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(*pos));
+            //        shader_program.set_mat4("model", &model);
+            //        //gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
+            //        gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
+            //    }
+            //}
         }
 
         window.swap_buffers();
@@ -389,3 +391,6 @@ fn process_input(window: &mut Window, delta_time: &f32, bindings: &mut [KeyBindi
     }
 }
 
+fn multiply_the_values(lhs: &cgmath::Vector3<i32>, rhs: &cgmath::Vector3<i32>) -> cgmath::Vector3<i32>{
+    vec3(lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z)
+}
