@@ -39,27 +39,40 @@ pub struct Chunk {
 impl Chunk {
     pub fn gen(position: IPosition) -> Self {
         let mut blocks: HashMap<Vector3<i32>, (Block, bool)> = HashMap::new();
-        let fbm = Fbm::<Perlin>::new(0);
-        let plane_map = PlaneMapBuilder::<_, 2>::new(fbm)
-        .set_size(16, 16)
-        .set_x_bounds(0.0, 1.0)
-        .set_y_bounds(0.0, 1.0)
-        .build();
+        let noise = simdnoise::NoiseBuilder::fbm_2d(16, 16).generate_scaled(0.0, 2.56);
 
-        println!("1 / 256 = {}", 1.0f64 / 256.0f64);
+        //let mut z_pos: usize = 0;
+        //for (i, n) in noise.iter().enumerate() {
+        //    let y = (*n * 100.0).trunc() as i32;
+        //    println!("{}", y);
+        //    if (i+1) % 16 == 0 {
+        //        z_pos += 1
+        //    }
+        //    blocks.insert(vec3(i as i32 % 16, y as i32, z_pos as i32), (Block(BlockType::Dirt), false));
+//
+//
+//
+        //}
+        //let fbm = Fbm::<Perlin>::new(0);
+        //let plane_map = PlaneMapBuilder::<_, 2>::new(fbm)
+        //.set_size(16, 16)
+        //.set_x_bounds(0.0, 1.0)
+        //.set_y_bounds(0.0, 1.0)
+        //.build();
+        //println!("1 / 256 = {}", 1.0f64 / 256.0f64);
+        //let _ = &plane_map.write_to_file("test2.png");
+        //for x in 0..=15 {
+        //    for y in 0..=255 {
+        //        for z in 0..=15 {
+        //            //if y == 0 {
+        //            //    println!("y value: {}", plane_map.get_value(x, z) * 256.0f64);
+        //            //}
+        //            let b_type: BlockType = if y > 12 {BlockType::Air} else if y == 1 {BlockType::Grass} else {BlockType::Dirt};
+        //            blocks.insert(vec3(x as i32 - 15 , y as i32 - 255, z as i32 - 15), (Block(b_type), false));
+        //        }
+        //    }
+        //};
 
-        let _ = &plane_map.write_to_file("test2.png");
-        for x in 0..=15 {
-            for y in 0..=255 {
-                for z in 0..=15 {
-                    if y == 0 {
-                        println!("y value: {}", plane_map.get_value(x, z) * 256.0f64);
-                    }
-                    let b_type: BlockType = if y > 12 {BlockType::Air} else if y == 1 {BlockType::Grass} else {BlockType::Dirt};
-                    blocks.insert(vec3(x as i32 - 15 , y as i32 - 255, z as i32 - 15), (Block(b_type), false));
-                }
-            }
-        }
 
         let mut output = Self {
             position,

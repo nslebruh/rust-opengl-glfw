@@ -31,7 +31,7 @@ fn main() {
     let data = img.to_vec();
 
     let mut camera = Camera {
-        position: Point3::new(0.0, 0.0, 3.0),
+        position: Point3::new(0.0, 1.0, 0.0),
         ..Default::default()
     };
 
