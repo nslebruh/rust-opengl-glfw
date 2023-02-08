@@ -172,7 +172,7 @@ fn main() {
     //let cube_positions: Vec<Vector3<f32>> = gen_cube_chunk_f32(16);
     //let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
 
-    let world = World::new(2, 1);
+    let world = World::new(4, 1);
     //let cube_positions: Chunk = Chunk::gen(vec3(0, 0, 0), 1);
     let pos1 = vec3(1, 2, 3);
     let pos2 = vec3(4, 5, 6);
@@ -288,7 +288,7 @@ fn main() {
 
 
         unsafe {
-            gl_clear_color(255, 119, 110, 255);
+            gl_clear_color(128, 128, 128, 255);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 

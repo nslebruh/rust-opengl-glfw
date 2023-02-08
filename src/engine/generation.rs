@@ -106,8 +106,8 @@ impl Chunk {
         
         for x in 0..=15 {
             for z in 0..=15 {
-                for y in 0..=noise[x][z] {
-                    blocks.insert(vec3(x as i32, y as i32, z as i32), (Block(BlockType::Dirt), false));
+                for y in 0..=noise[z][x] {
+                    blocks.insert(vec3(x as i32, y, z as i32), (Block(BlockType::Dirt), false));
                 }
             }
         }
