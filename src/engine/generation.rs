@@ -30,25 +30,60 @@ pub struct Block(pub BlockType);
 pub struct World {
     pub chunks: Vec<Vec<Chunk>>,
     seed: i32,
+    noise: Vec<Vec<Vec<[i32; 16]>>>
 }
 
 impl World {
     pub fn new(square_size: usize, seed: i32) -> Self {
-        let mut chunks: Vec<Vec<Chunk>> = vec![];
-        let mut z_chunks: Vec<Chunk> = vec![];
-
-        for x in 0..=square_size - 1 {
-            z_chunks = vec![];
-            for z in 0..=square_size - 1 {
-                z_chunks.push(Chunk::gen(vec3(x as i32, 1, z as i32), seed))
+        let size = square_size - 1;
+        let noise = simdnoise::NoiseBuilder::fbm_2d( (16 * square_size) as usize, (16 * square_size) as usize).with_seed(seed).generate_scaled(0.0, 2.56);
+        let mut chunks_noise: Vec<Vec<Vec<[i32; 16]>>> = Vec::new();
+        let mut chunks: Vec<Vec<Chunk>> = Vec::new();
+        for i in 0..=size {
+            chunks_noise.push(Vec::new());
+            chunks.push(Vec::new());
+            for _ in 0..=size {
+                chunks_noise[i].push(Vec::new())
             }
-            println!("{}", z_chunks.len());
-            chunks.push(z_chunks);
         }
+
+        let mut z_pos: usize = 0;
+        let mut x_pos: usize = 0;
+        let mut line_num: usize = 0;
+
+        for (_, chunk) in noise.chunks(16).enumerate() {
+            println!("{x_pos}");
+            chunks_noise[x_pos][z_pos].push(f32_slice_to_i32(chunk));
+            x_pos += 1;
+            if x_pos == square_size {
+                x_pos = 0;
+                line_num += 1;
+            }
+            if line_num == 16 {
+                z_pos += 1;
+                line_num = 0;
+            }
+        }
+        for (l, _) in chunks_noise.iter().enumerate() {
+            for (n, _) in chunks_noise.iter().enumerate() {
+                println!("{:?}", chunks_noise[l][n].len())
+            }
+        }
+
+        for x in 0..=size {
+            for z in 0..=size {
+                chunks[x].push(Chunk::gen(vec3(x as i32, 0, z as i32), &chunks_noise[x][z]))
+            }
+        }
+
+        for (m, _) in chunks.iter().enumerate() {
+            println!("{:?}", chunks[m].len());
+        }  
 
         Self {
             seed,
-            chunks
+            chunks,
+            noise: chunks_noise
         }
     }
 }
@@ -64,19 +99,20 @@ pub struct Chunk {
 #[allow(dead_code)]
 
 impl Chunk {
-    pub fn gen(position: IPosition, seed: i32) -> Self {
+    pub fn gen(position: IPosition, noise: &Vec<[i32; 16]>) -> Self {
         println!("{:?}", &position);
+        println!("{}", noise.len());
         let mut blocks: HashMap<Vector3<i32>, (Block, bool)> = HashMap::new();
-        let noise = simdnoise::NoiseBuilder::fbm_2d_offset(position.x as f32, 16, position.z as f32, 16).with_seed(seed).generate_scaled(0.0, 2.56);
-
-        for (x, chunk) in noise.chunks(16).enumerate() {
-            for (z, val) in chunk.iter().enumerate() {
-                let y = ((*val * 100.0).trunc() as i32) / 16;
-                for i in 0..=y {
-                    blocks.insert(vec3(x as i32, i as i32, z as i32), (Block(BlockType::Dirt), false));
+        
+        for x in 0..=15 {
+            for z in 0..=15 {
+                for y in 0..=noise[x][z] {
+                    blocks.insert(vec3(x as i32, y as i32, z as i32), (Block(BlockType::Dirt), false));
                 }
             }
         }
+        
+
 
         //let mut z_pos: usize = 0;
         //for (i, n) in noise.iter().enumerate() {
@@ -203,4 +239,14 @@ pub fn block_pos_to_f32(pos: IPosition) -> FPosition {
         y: pos.y as f32,
         z: pos.z as f32
     }
+}
+
+
+fn f32_slice_to_i32(slice: &[f32]) -> [i32; 16] {
+    let mut output: [i32; 16] = [0; 16];
+    for (i, f) in slice.iter().enumerate() {
+        output[i] = (f * 100.0).trunc() as i32 / 16;
+    }
+    println!("{:?}", output);
+    output
 }
