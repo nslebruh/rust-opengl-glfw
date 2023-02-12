@@ -15,3 +15,4 @@ thiserror = "1.0.38"
 nalgebra-glm = "0.18.0"
 noise = {version = "0.8.2", features = ["images"]}
 simdnoise = "3.1.6"
+block-mesh = "0.2.0"

@@ -169,19 +169,7 @@ fn main() {
         0.0, 1.0, 0.0, 0.0, 1.0
    ];
 
-    //let cube_positions: Vec<Vector3<f32>> = gen_cube_chunk_f32(16);
-    //let cubes_to_render = has_six_adjacent_vector3s(&cube_positions);
-
     let world = World::new(4, 1);
-    //let cube_positions: Chunk = Chunk::gen(vec3(0, 0, 0), 1);
-    let pos1 = vec3(1, 2, 3);
-    let pos2 = vec3(4, 5, 6);
-    println!("Dot product of pos1 ~ pos2: {}", pos1.dot(pos2));
-    println!("Dot product of pos2 ~ pos1: {}", pos2.dot(pos1));
-    println!("Cross product of pos1 ~ pos2: {:?}", pos1.cross(pos2));
-    println!("Cross product of pos2 ~ pos1: {:?}", pos2.cross(pos1));
-    println!("proper tuple multiplication: {:?}", multiply_the_values(&pos1, &pos2));
-
 
     let mut vbo: GLuint = 0;
     let mut vao: GLuint = 0;
@@ -274,6 +262,7 @@ fn main() {
 
     unsafe {
         gl::BindVertexArray(vao);
+        gl::BindTexture(gl::TEXTURE_2D, texture);
     }
 
     while !window.should_close() {
@@ -309,7 +298,6 @@ fn main() {
         }
         unsafe {
             shader_program.use_program();
-            gl::BindTexture(gl::TEXTURE_2D, texture);
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
             for chunk_vec in &world.chunks {
                 for chunk in chunk_vec {

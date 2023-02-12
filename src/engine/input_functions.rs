@@ -40,7 +40,7 @@ pub fn print_camera_pos(args: InputFunctionArguments) {
 }
 
 pub fn increase_movement_speed(args: InputFunctionArguments) {
-    args.camera.unwrap().movement_speed = if args.action.unwrap() == &glfw::Action::Press {5.0} else {2.5};
+    args.camera.unwrap().movement_speed = if args.action.unwrap() == &glfw::Action::Press {10.0} else {5.0};
 }
 
 pub fn toggle_fullscreen(args: InputFunctionArguments) {

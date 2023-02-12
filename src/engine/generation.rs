@@ -1,5 +1,6 @@
 use cgmath::{vec3, Vector3};
 use std::collections::{HashSet, HashMap};
+use noise::{NoiseFn, Seedable, Perlin, Fbm};
 use simdnoise::NoiseBuilder;
 
 #[allow(dead_code)]
@@ -29,12 +30,14 @@ pub struct Block(pub BlockType);
 
 pub struct World {
     pub chunks: Vec<Vec<Chunk>>,
+    noise_fn: Fbm<Perlin>,
     seed: i32,
     noise: Vec<Vec<Vec<[i32; 16]>>>
 }
 
 impl World {
     pub fn new(square_size: usize, seed: i32) -> Self {
+        let noise_fn = Fbm::<Perlin>::default().set_seed(seed as u32);
         let size = square_size - 1;
         let noise = simdnoise::NoiseBuilder::fbm_2d( (16 * square_size) as usize, (16 * square_size) as usize).with_seed(seed).generate_scaled(0.0, 2.56);
         let mut chunks_noise: Vec<Vec<Vec<[i32; 16]>>> = Vec::new();
@@ -52,7 +55,7 @@ impl World {
         let mut line_num: usize = 0;
 
         for (_, chunk) in noise.chunks(16).enumerate() {
-            println!("{x_pos}");
+            //println!("{x_pos}");
             chunks_noise[x_pos][z_pos].push(f32_slice_to_i32(chunk));
             x_pos += 1;
             if x_pos == square_size {
@@ -64,11 +67,11 @@ impl World {
                 line_num = 0;
             }
         }
-        for (l, _) in chunks_noise.iter().enumerate() {
-            for (n, _) in chunks_noise.iter().enumerate() {
-                println!("{:?}", chunks_noise[l][n].len())
-            }
-        }
+        //for (l, _) in chunks_noise.iter().enumerate() {
+        //    for (n, _) in chunks_noise.iter().enumerate() {
+        //        println!("{:?}", chunks_noise[l][n].len())
+        //    }
+        //}
 
         for x in 0..=size {
             for z in 0..=size {
@@ -76,14 +79,22 @@ impl World {
             }
         }
 
-        for (m, _) in chunks.iter().enumerate() {
-            println!("{:?}", chunks[m].len());
-        }  
+        //for (m, _) in chunks.iter().enumerate() {
+        //    println!("{:?}", chunks[m].len());
+        //}  
 
         Self {
             seed,
             chunks,
-            noise: chunks_noise
+            noise: chunks_noise,
+            noise_fn
+        }
+    }
+
+    pub fn check_chunk_visibility(&mut self, chunk: Chunk) {
+        let set: HashSet<IPosition> = chunk.blocks.keys().cloned().collect();
+        if chunk.position.x + 1 > self.chunks.len() as i32 {
+
         }
     }
 }
@@ -157,8 +168,8 @@ impl Chunk {
     }
 
     pub fn is_edge_position(&self, pos: IPosition) -> bool {
-        let min_bounds = Vector3::new(0, 0, 0);
-        let max_bounds = Vector3::new(15, 15, 15);
+        let min_bounds = Vector3::new(pos.x * 16, pos.y * 16, pos.z * 16);
+        let max_bounds = Vector3::new(15 + (pos.x * 16), 15 + (pos.y * 16), 15 + (pos.z * 16));
 
         pos.x == min_bounds.x 
         || pos.x == max_bounds.x
@@ -217,7 +228,6 @@ pub fn check_adjacent(vectors: &[Vector3<i32>]) -> HashMap<Vector3<i32>, bool> {
         }
         result.insert(vector, count == 6);
     }
-
     result
 }
 
