@@ -48,7 +48,7 @@ impl Chunk {
     }
 
     pub unsafe fn create_mesh(&mut self, id: u32) -> u32 {
-        
+        id
     }
 }
 
