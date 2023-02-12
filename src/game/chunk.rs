@@ -1,14 +1,14 @@
 use glm::I32Vec3;
 use noise::{Fbm, Perlin, NoiseFn};
-use block_mesh::{visible_block_faces, ndshape::{ConstShape, ConstShape3u32}};
+use block_mesh::{visible_block_faces, UnitQuadBuffer, ndshape::{ConstShape, ConstShape3u32}};
 use super::block::{Block, BlockType};
 
 type ChunkShape = ConstShape3u32<16, 16, 16>;
 
-#[derive(Debug)]
 pub struct Chunk {
     pub position: I32Vec3,
     pub blocks: [Block; ChunkShape::SIZE as usize],
+    pub mesh: UnitQuadBuffer
 }
 
 impl Default for Chunk {
@@ -16,6 +16,7 @@ impl Default for Chunk {
         Self {
             position: Default::default(),
             blocks: [Block::default(); ChunkShape::SIZE as usize],
+            mesh: UnitQuadBuffer::default()
 
         }
     }

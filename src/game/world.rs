@@ -4,7 +4,7 @@ use noise::{Fbm, Perlin, Seedable};
 use super::chunk::Chunk;
 use super::player::Player;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct World {
     pub chunks: Vec<Vec<Vec<Chunk>>>,
     pub lower_size: (i32, i32, i32),
