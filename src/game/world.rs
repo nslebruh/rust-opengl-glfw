@@ -26,7 +26,7 @@ impl World {
         }
     }
 
-    pub fn initial_gen(self, initial_size: u32) -> Self { 
+    pub fn initial_gen(self, initial_size: u32) -> Self {
         let (upper_size, lower_size) = get_bounds(initial_size);
         let mut chunks: Vec<Vec<Vec<Chunk>>> = Vec::new();
 

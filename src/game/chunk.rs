@@ -1,14 +1,14 @@
 use glm::I32Vec3;
 use noise::{Fbm, Perlin, NoiseFn};
-use block_mesh::{visible_block_faces, UnitQuadBuffer, ndshape::{ConstShape, ConstShape3u32}};
+use block_mesh::{greedy_quads, GreedyQuadsBuffer, ndshape::{ConstShape, ConstShape3u32}, RIGHT_HANDED_Y_UP_CONFIG};
 use super::block::{Block, BlockType};
 
-type ChunkShape = ConstShape3u32<16, 16, 16>;
+pub type ChunkShape = ConstShape3u32<16, 16, 16>;
 
 pub struct Chunk {
     pub position: I32Vec3,
     pub blocks: [Block; ChunkShape::SIZE as usize],
-    pub mesh: UnitQuadBuffer
+    pub mesh: GreedyQuadsBuffer
 }
 
 impl Default for Chunk {
@@ -16,7 +16,7 @@ impl Default for Chunk {
         Self {
             position: Default::default(),
             blocks: [Block::default(); ChunkShape::SIZE as usize],
-            mesh: UnitQuadBuffer::default()
+            mesh: GreedyQuadsBuffer::new(ChunkShape::SIZE as usize)
 
         }
     }
@@ -24,12 +24,32 @@ impl Default for Chunk {
 
 impl Chunk {
     pub fn gen(position: I32Vec3, noise: &Fbm<Perlin>) -> Self {
-        Self::default()
+        let x_offset = position.x * 16;
+        let y_offset = position.y * 16;
+        let z_offset = position.z * 16;
+        let mut blocks = [Block::default(); ChunkShape::SIZE as usize];
+        for i in 0..ChunkShape::SIZE {
+            let [x, y, z] = ChunkShape::delinearize(i);
+            blocks[i as usize] = if noise.get([(x as i32 + x_offset) as f64, (y as i32 + y_offset) as f64, (z as i32 + z_offset) as f64]).trunc() > -1.0 {
+                Block(BlockType::Air)
+            } else {
+                blocks[i as usize]
+            }
+        };
+
+        let mut mesh = GreedyQuadsBuffer::new(blocks.len());
+        greedy_quads(&blocks, &ChunkShape {}, [0; 3], [15; 3], &RIGHT_HANDED_Y_UP_CONFIG.faces, &mut mesh);
+        println!("{}", mesh.quads.num_quads());
+        Self {
+            position,
+            blocks,
+            mesh
+        }
     }
 
-    pub fn create_mesh(&mut self) {
-
-    } 
+    pub unsafe fn create_mesh(&mut self, id: u32) -> u32 {
+        
+    }
 }
 
 //pub struct Chunk {

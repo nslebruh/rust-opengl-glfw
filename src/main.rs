@@ -310,27 +310,6 @@ fn main() {
                     }
                 }
             }
-            //world.chunks.iter().for_each(|chunk_vec| {
-            //    chunk_vec.iter().for_each(|chunk| {
-            //        chunk.blocks.iter().for_each(|(pos, block)| {
-            //            if block.1 {
-            //                let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(pos + (chunk.position * 16)));
-            //                shader_program.set_mat4("model", &model);
-            //                gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
-            //            }
-            //        });
-            //    });
-            //});
-
-
-            //for (pos, block) in cube_positions.blocks.iter() {
-            //    if block.1 {
-            //        let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(*pos));
-            //        shader_program.set_mat4("model", &model);
-            //        //gl::DrawElements(TRIANGLES, indices.len() as i32, gl::UNSIGNED_INT, std::ptr::null())
-            //        gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
-            //    }
-            //}
         }
 
         window.swap_buffers();
