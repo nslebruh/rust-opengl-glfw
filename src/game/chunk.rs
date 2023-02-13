@@ -1,4 +1,4 @@
-use glm::I32Vec3;
+use glm::{I32Vec3, Vec3, Vec2};
 use noise::{Fbm, Perlin, NoiseFn};
 use block_mesh::{greedy_quads, GreedyQuadsBuffer, ndshape::{ConstShape, ConstShape3u32}, RIGHT_HANDED_Y_UP_CONFIG, QuadCoordinateConfig};
 use crate::engine::mesh::{Mesh, Vertex, Texture};
@@ -33,9 +33,9 @@ impl Chunk {
         for i in 0..ChunkShape::SIZE {
             let [x, y, z] = ChunkShape::delinearize(i);
             blocks[i as usize] = if noise.get([(x as i32 + x_offset) as f64, (y as i32 + y_offset) as f64, (z as i32 + z_offset) as f64]).trunc() > -1.0 {
-                Block(BlockType::Air)
-            } else {
                 blocks[i as usize]
+            } else {
+                Block(BlockType::Air)
             }
         };
 
@@ -44,23 +44,33 @@ impl Chunk {
         let num_indices = buffer.quads.num_quads() * 6;
         let num_vertices = buffer.quads.num_quads() * 4;
         let mut indices = Vec::with_capacity(num_indices);
-        let mut positions = Vec::with_capacity(num_vertices);
-        let mut normals = Vec::with_capacity(num_vertices);
-        let mut textures = Vec::with_capacity(num_vertices);
-        let mut vertices: Vec<Vertex> = Vec::with_capacity(buffer.quads.num_quads());
-        println!("{}", buffer.quads.num_quads());
+        let mut vertices: Vec<Vertex> = Vec::with_capacity(num_vertices);
+        let mut textures: Vec<Texture> = Vec::new();
+        textures.push(Texture { id: 0, type_: String::from("texture_diffuse"), path: String::from("dirt.png") });
+        println!("quads created: {}", buffer.quads.num_quads());
 
         for (group, face) in buffer.quads.groups.into_iter().zip(RIGHT_HANDED_Y_UP_CONFIG.faces.into_iter()) {
-            for quad in group.into_iter() {
-                indices.extend_from_slice(&face.quad_mesh_indices(positions.len() as u32));
-                positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
-                normals.extend_from_slice(&face.quad_mesh_normals());
-                textures.extend_from_slice(&face.tex_coords(RIGHT_HANDED_Y_UP_CONFIG.u_flip_face, true, &quad))
+            for (num, quad) in group.into_iter().enumerate() {
+                indices.extend_from_slice(&face.quad_mesh_indices(num as u32));
+                let position = &face.quad_mesh_positions(&quad, 1.0);
+                let normal = &face.quad_mesh_normals();
+                let tex_coord = &face.tex_coords(RIGHT_HANDED_Y_UP_CONFIG.u_flip_face, true, &quad);
+                for j in 0..3 {
+                    vertices.push(Vertex {
+                        position: Vec3::from(position[j]),
+                        normal: Vec3::from(normal[j]),
+                        texCoords: Vec2::from(tex_coord[j]),
+                        ..Default::default()
+                    });
+                }
+                //positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
+                //normals.extend_from_slice(&face.quad_mesh_normals());
+                //textures.extend_from_slice(&face.tex_coords(RIGHT_HANDED_Y_UP_CONFIG.u_flip_face, true, &quad))
 
             }
         }
 
-        let mut mesh: Mesh = Mesh::new();
+        let mut mesh: Mesh = Mesh::new(vertices, indices, textures);
 
         Self {
             position,

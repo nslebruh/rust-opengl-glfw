@@ -6,30 +6,30 @@ use std::ptr;
 use gl;
 use super::shader::Shader;
 use crate::offset_of;
-use glm::Vec3;
+use glm::{Vec3, Vec2};
 
 #[repr(C)]
 pub struct Vertex {
     // position
-    pub Position: Vec3,
+    pub position: Vec3,
     // normal
-    pub Normal: Vec3,
+    pub normal: Vec3,
     // texCoords
-    pub TexCoords: Vec3,
+    pub texCoords: Vec2,
     // tangent
-    pub Tangent: Vec3,
+    pub tangent: Vec3,
     // bitangent
-    pub Bitangent: Vec3,
+    pub bitangent: Vec3,
 }
 
 impl Default for Vertex {
     fn default() -> Self {
         Vertex {
-            Position: Vec3::zeros(),
-            Normal: Vec3::zeros(),
-            TexCoords: Vec3::zeros(),
-            Tangent: Vec3::zeros(),
-            Bitangent: Vec3::zeros(),
+            position: Vec3::zeros(),
+            normal: Vec3::zeros(),
+            texCoords: Vec2::zeros(),
+            tangent: Vec3::zeros(),
+            bitangent: Vec3::zeros(),
         }
     }
 }
@@ -124,31 +124,30 @@ impl Mesh {
         // A great thing about structs with repr(C) is that their memory layout is sequential for all its items.
         // The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
         // again translates to 3/2 floats which translates to a byte array.
-        let size = (self.vertices.len() * size_of::<Vertex>()) as isize;
-        let data = &self.vertices[0] as *const Vertex as *const c_void;
-        gl::BufferData(gl::ARRAY_BUFFER, size, data, gl::STATIC_DRAW);
+        let size = (&self.vertices.len() * size_of::<Vertex>()) as isize;
+
+        gl::BufferData(gl::ARRAY_BUFFER, size, self.vertices.as_ptr().cast(), gl::STATIC_DRAW);
 
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.EBO);
-        let size = (self.indices.len() * size_of::<u32>()) as isize;
-        let data = &self.indices[0] as *const u32 as *const c_void;
-        gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, size, data, gl::STATIC_DRAW);
+        let size = (&self.indices.len() * size_of::<u32>()) as isize;
+        gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, size, self.indices.as_ptr().cast(), gl::STATIC_DRAW);
         // set the vertex attribute pointers
         let size = size_of::<Vertex>() as i32;
         // vertex Positions
         gl::EnableVertexAttribArray(0);
-        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, Position) as *const c_void);
+        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, position) as *const c_void);
         // vertex normals
         gl::EnableVertexAttribArray(1);
-        gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, Normal) as *const c_void);
+        gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, normal) as *const c_void);
         // vertex texture coords
         gl::EnableVertexAttribArray(2);
-        gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, TexCoords) as *const c_void);
+        gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, texCoords) as *const c_void);
         // vertex tangent
         gl::EnableVertexAttribArray(3);
-        gl::VertexAttribPointer(3, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, Tangent) as *const c_void);
+        gl::VertexAttribPointer(3, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, tangent) as *const c_void);
         // vertex bitangent
         gl::EnableVertexAttribArray(4);
-        gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, Bitangent) as *const c_void);
+        gl::VertexAttribPointer(4, 3, gl::FLOAT, gl::FALSE, size, offset_of!(Vertex, bitangent) as *const c_void);
 
         gl::BindVertexArray(0);
     }

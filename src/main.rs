@@ -268,7 +268,7 @@ fn main() {
 
     unsafe {
         //gl::BindVertexArray(vao);
-        gl::BindTexture(gl::TEXTURE_2D, texture);
+        //gl::BindTexture(gl::TEXTURE_2D, texture);
     }
 
     while !window.should_close() {
@@ -305,7 +305,7 @@ fn main() {
         unsafe {
             shader_program.use_program();
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
-            test_chunk.mesh.draw();
+            test_chunk.mesh.draw(&shader_program);
             //for chunk_vec in &world.chunks {
             //    for chunk in chunk_vec {
             //        for (pos, block) in chunk.blocks.iter() {
