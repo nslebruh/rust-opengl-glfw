@@ -2,8 +2,6 @@ extern crate gl;
 
 use std::ffi::CString;
 
-
-
 trait Apply<Args> {
     type Output;
     fn apply(&self, args: Args) -> Self::Output;
