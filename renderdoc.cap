@@ -7,7 +7,7 @@
         ],
         "executable": "C:\\Users\\nsleb\\Documents\\GitHub\\rust-opengl-glfw\\target\\debug\\rust-opengl-glfw.exe",
         "inject": false,
-        "numQueuedFrames": 0,
+        "numQueuedFrames": 1,
         "options": {
             "allowFullscreen": true,
             "allowVSync": true,
@@ -21,7 +21,7 @@
             "refAllResources": false,
             "verifyBufferAccess": false
         },
-        "queuedFrameCap": 0,
+        "queuedFrameCap": 5,
         "workingDir": ""
     }
 }

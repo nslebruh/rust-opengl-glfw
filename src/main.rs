@@ -13,6 +13,7 @@ use cgmath::{Matrix4, vec3, Rad, perspective, Deg, InnerSpace, Point3};
 
 use engine::shader::Shader;
 use engine::util::*;
+use game::chunk::Chunk;
 use gl::{types::*, ARRAY_BUFFER, TRIANGLES};
 use glfw::Key;
 
@@ -22,6 +23,8 @@ use engine::{
     camera::Camera,
     window::Window
 };
+use glm::vec3 as glm_vec3;
+use noise::{Perlin, Fbm, Seedable};
 
 fn main() {
     let scr_width: u32 = 1280;
@@ -170,6 +173,9 @@ fn main() {
    ];
 
     let world = World::new(4, 1);
+    let noise_fn = Fbm::<Perlin>::default().set_seed(1 as u32);
+
+    let test_chunk = Chunk::gen(glm_vec3(0, 0, 0), &noise_fn);
 
     let mut vbo: GLuint = 0;
     let mut vao: GLuint = 0;
@@ -261,7 +267,7 @@ fn main() {
 
 
     unsafe {
-        gl::BindVertexArray(vao);
+        //gl::BindVertexArray(vao);
         gl::BindTexture(gl::TEXTURE_2D, texture);
     }
 
@@ -299,17 +305,18 @@ fn main() {
         unsafe {
             shader_program.use_program();
             //gl::DrawArrays(TRIANGLES, 0, 3 as GLsizei);
-            for chunk_vec in &world.chunks {
-                for chunk in chunk_vec {
-                    for (pos, block) in chunk.blocks.iter() {
-                        if block.1 {
-                            let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(pos + (chunk.position * 16)));
-                            shader_program.set_mat4("model", &model);
-                            gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
-                        }
-                    }
-                }
-            }
+            test_chunk.mesh.draw();
+            //for chunk_vec in &world.chunks {
+            //    for chunk in chunk_vec {
+            //        for (pos, block) in chunk.blocks.iter() {
+            //            if block.1 {
+            //                let model: Matrix4<f32> = Matrix4::from_translation(block_pos_to_f32(pos + (chunk.position * 16)));
+            //                shader_program.set_mat4("model", &model);
+            //                gl::DrawArrays(TRIANGLES, 0, (vertices.len() / 3) as i32)
+            //            }
+            //        }
+            //    }
+            //}
         }
 
         window.swap_buffers();

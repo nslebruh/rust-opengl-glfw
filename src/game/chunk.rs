@@ -1,6 +1,8 @@
 use glm::I32Vec3;
 use noise::{Fbm, Perlin, NoiseFn};
-use block_mesh::{greedy_quads, GreedyQuadsBuffer, ndshape::{ConstShape, ConstShape3u32}, RIGHT_HANDED_Y_UP_CONFIG};
+use block_mesh::{greedy_quads, GreedyQuadsBuffer, ndshape::{ConstShape, ConstShape3u32}, RIGHT_HANDED_Y_UP_CONFIG, QuadCoordinateConfig};
+use crate::engine::mesh::{Mesh, Vertex, Texture};
+
 use super::block::{Block, BlockType};
 
 pub type ChunkShape = ConstShape3u32<16, 16, 16>;
@@ -8,7 +10,7 @@ pub type ChunkShape = ConstShape3u32<16, 16, 16>;
 pub struct Chunk {
     pub position: I32Vec3,
     pub blocks: [Block; ChunkShape::SIZE as usize],
-    pub mesh: GreedyQuadsBuffer
+    pub mesh: Mesh
 }
 
 impl Default for Chunk {
@@ -16,7 +18,7 @@ impl Default for Chunk {
         Self {
             position: Default::default(),
             blocks: [Block::default(); ChunkShape::SIZE as usize],
-            mesh: GreedyQuadsBuffer::new(ChunkShape::SIZE as usize)
+            mesh: Mesh::default()
 
         }
     }
@@ -37,9 +39,29 @@ impl Chunk {
             }
         };
 
-        let mut mesh = GreedyQuadsBuffer::new(blocks.len());
-        greedy_quads(&blocks, &ChunkShape {}, [0; 3], [15; 3], &RIGHT_HANDED_Y_UP_CONFIG.faces, &mut mesh);
-        println!("{}", mesh.quads.num_quads());
+        let mut buffer = GreedyQuadsBuffer::new(blocks.len());
+        greedy_quads(&blocks, &ChunkShape {}, [0; 3], [15; 3], &RIGHT_HANDED_Y_UP_CONFIG.faces, &mut buffer);
+        let num_indices = buffer.quads.num_quads() * 6;
+        let num_vertices = buffer.quads.num_quads() * 4;
+        let mut indices = Vec::with_capacity(num_indices);
+        let mut positions = Vec::with_capacity(num_vertices);
+        let mut normals = Vec::with_capacity(num_vertices);
+        let mut textures = Vec::with_capacity(num_vertices);
+        let mut vertices: Vec<Vertex> = Vec::with_capacity(buffer.quads.num_quads());
+        println!("{}", buffer.quads.num_quads());
+
+        for (group, face) in buffer.quads.groups.into_iter().zip(RIGHT_HANDED_Y_UP_CONFIG.faces.into_iter()) {
+            for quad in group.into_iter() {
+                indices.extend_from_slice(&face.quad_mesh_indices(positions.len() as u32));
+                positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
+                normals.extend_from_slice(&face.quad_mesh_normals());
+                textures.extend_from_slice(&face.tex_coords(RIGHT_HANDED_Y_UP_CONFIG.u_flip_face, true, &quad))
+
+            }
+        }
+
+        let mut mesh: Mesh = Mesh::new();
+
         Self {
             position,
             blocks,
